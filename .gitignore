@@ -1,0 +1,34 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Local data and outputs
+data/raw/
+data/processed/
+outputs/
+models/
+runs/
+*.sqlite
+*.db
+
+# Environment
+.env
+.env.*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local AI/tooling workspaces
+.codex/
+.claude/
+.claudecode/
+.cursor/
+.windsurf/
+openspec/
