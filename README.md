@@ -1,133 +1,113 @@
-﻿# WebNovel Title Localization Lab
+# WebNovel Title Localization Lab
 
-A lightweight research project for Chinese web-novel title localization. The goal is to explore how to generate and rank English title candidates for overseas web-novel platforms such as WebNovel.
+A small, reproducible research lab for generating and ranking English titles for
+Chinese web novels. It is designed as an evaluation-first portfolio project, not
+as a production translation platform.
 
-This project is intentionally scoped as a small, reproducible portfolio project rather than a production translation platform.
+## Research Question
 
-## Project Goal
+Can a task-specific ranker, trained with weak platform signals and a small amount
+of human preference data, rank title candidates more reliably than a rule-based
+baseline or a general-purpose LLM judge?
 
-Given a Chinese web-novel title, synopsis, genre, and story hook, the system generates several English title candidates and ranks them by:
+Title quality is treated as a multi-objective decision:
 
-- faithfulness to the story premise
-- English naturalness
-- platform-style fit
+- faithfulness to the premise
+- natural English
+- genre and platform fit
 - reader appeal
-- risk of misleading or over-hyped titles
+- low risk of clickbait, spoilers, or invented facts
 
-The core research question is:
+## Scope
 
-> Can a task-specific ranking model, trained with weak platform labels and a small amount of human preference data, rank title candidates more reliably than rule-based scoring or general LLM judging?
+The first complete research cycle is intentionally narrow:
 
-## Initial Scope
+- Chinese source and English target
+- web-novel title localization
+- title, synopsis, genre, protagonist, conflict, and hook as input context
+- six to eight candidates and a ranked Top 3 as output
+- offline evaluation only
 
-V1 focuses on a narrow scenario:
+Full-text translation, a reader-facing product, live CTR optimization, broad web
+crawling, reinforcement learning, and multilingual expansion are outside the
+initial scope.
 
-- Source language: Chinese
-- Target language: English
-- Domain: web-novel titles
-- Target style: WebNovel-like overseas platform naming
-- Input: source title, synopsis, genre, protagonist, core conflict, story hook
-- Output: 6-8 English title candidates with ranked recommendations
-
-Out of scope for V1:
-
-- full novel translation
-- running a reading website
-- real CTR optimization
-- large-scale crawling of novel body text
-- PPO/RL training
-- 16-language localization
-
-## Planned Pipeline
+## System Flow
 
 ```text
-source title + synopsis + genre
--> candidate generation
--> hard constraint filtering
--> rule-based baseline
--> LLM judge baseline
--> reward/ranking model
--> human preference evaluation
--> error analysis report
+source record
+  -> validation and provenance checks
+  -> candidate generation by named strategies
+  -> hard-constraint filtering
+  -> rule, LLM, or learned ranking
+  -> frozen-set evaluation
+  -> error analysis and experiment report
 ```
 
-## Data Strategy
+Every stage exchanges versioned artifacts rather than hidden in-memory state.
+This makes it possible to compare rankers against the exact same candidates and
+to reproduce a result without regenerating upstream data.
 
-The project separates data into three layers:
+## Architecture Principles
 
-1. Weak supervision data
-   - platform-published translated titles as anchor candidates
-   - model-generated candidates
-   - synthetic pairwise/listwise preference labels
+- Evaluation first: define the frozen set and rubric before tuning a ranker.
+- Separate generation from ranking: a ranking experiment must not silently
+  change its candidate pool.
+- Separate hard constraints from preferences: factual violations are filtered
+  or flagged before style and appeal are scored.
+- Track provenance: each record, candidate, label, and result needs a stable ID.
+- Keep private data local: publish schemas, synthetic examples, aggregate
+  metrics, and reproducible procedures.
+- Prefer configuration over experiment-specific branches or copied scripts.
 
-2. Developer-labeled data
-   - small manually reviewed set for rubric design and error analysis
-
-3. Independent human evaluation set
-   - small frozen test set judged by external readers or English-capable reviewers
-
-Raw platform content should stay local by default. The public repository should prefer scripts, schemas, IDs, synthetic examples, aggregated metrics, and documentation rather than redistributing large amounts of platform text.
-
-## Evaluation
-
-Main metrics planned for V1:
-
-- Pairwise Accuracy
-- Hit@3
-- NDCG@K
-- position robustness
-- constraint violation rate
-- error type distribution
-- inference cost and latency
+The detailed boundaries and future package map are documented in
+[docs/architecture.md](docs/architecture.md).
 
 ## Repository Layout
 
 ```text
 webnovel-title-localization-lab/
-├── README.md
-├── pyproject.toml
-├── .gitignore
-├── configs/
-├── data/
-│   ├── examples/
-│   └── schemas/
-├── docs/
-│   ├── data_card.md
-│   ├── error_taxonomy.md
-│   └── experiment_plan.md
-├── experiments/
-├── src/
-│   └── title_localization_lab/
-└── tests/
+|-- configs/       # reviewed experiment configuration
+|-- data/
+|   |-- examples/  # redistributable synthetic records
+|   `-- schemas/   # versioned public data contracts
+|-- docs/          # architecture, data, evaluation, and research decisions
+|-- experiments/   # experiment manifests and short result reports
+|-- src/
+|   `-- title_localization_lab/
+`-- tests/         # contract, unit, integration, and regression checks
 ```
 
-## Version Roadmap
+Local raw data, processed corpora, model files, run outputs, private labels, and
+tool workspaces are excluded from Git.
 
-### V0: Rule and Prompt Baseline
+## Milestones
 
-- Define title quality rubric
-- Generate candidates by strategy
-- Score candidates with weighted dimensions
-- Produce a simple Top 3 ranking
+| Stage | Question | Exit condition |
+| --- | --- | --- |
+| V0 | Can deterministic rules establish a useful floor? | Reproducible Top 3 baseline and documented failures |
+| V1 | Which LLM judging protocol is stable enough? | Blind comparison of pointwise, pairwise, and listwise judging |
+| V2 | Does a learned ranker beat both baselines? | Improvement on the untouched frozen set with uncertainty reported |
+| V3 | Does limited human feedback correct weak-label bias? | Ablation showing where human labels help and where they do not |
 
-### V1: LLM Judge Baseline
+See [docs/experiment_plan.md](docs/experiment_plan.md) for stage gates and
+[docs/evaluation_protocol.md](docs/evaluation_protocol.md) for the common
+evaluation contract.
 
-- Compare absolute scoring, listwise ranking, and pairwise ranking
-- Test prompt and candidate order robustness
-- Analyze judge bias toward long or over-dramatic titles
+## Documentation Map
 
-### V2: Reward Model
-
-- Train a small ranking model using weak labels and generated candidates
-- Compare against rule baseline and LLM judge baseline
-- Evaluate on a frozen human-labeled test set
-
-### V3: Human Feedback Enhancement
-
-- Add a small amount of independent human preference data
-- Measure whether human labels correct weak-supervision bias
-- Produce error analysis and ablation report
+- [Architecture](docs/architecture.md): boundaries, dependency direction, and
+  the planned package map
+- [Data card](docs/data_card.md): provenance, release policy, splits, and leakage
+  controls
+- [Evaluation protocol](docs/evaluation_protocol.md): frozen-set and human
+  evaluation rules
+- [Error taxonomy](docs/error_taxonomy.md): annotation categories and severity
+- [Experiment plan](docs/experiment_plan.md): research sequence and promotion
+  criteria
 
 ## Current Status
 
-Project initialized. No data collection, model training, or service code has been implemented yet.
+The repository contains the architecture and research contracts only. Business
+logic, data collection, model training, and service code have not been
+implemented.

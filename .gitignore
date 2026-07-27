@@ -3,21 +3,36 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
 .venv/
 venv/
+build/
+dist/
+*.egg-info/
 
 # Local data and outputs
 data/raw/
+data/external/
+data/interim/
 data/processed/
+data/private/
+data/frozen/
 outputs/
 models/
 runs/
+artifacts/
 *.sqlite
 *.db
 
 # Environment
 .env
 .env.*
+
+# Notebooks
+.ipynb_checkpoints/
 
 # OS / editor
 .DS_Store
