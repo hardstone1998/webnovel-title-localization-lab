@@ -7,6 +7,7 @@ Tracked in Git:
 
 - `schemas/`: versioned data contracts
 - `examples/`: synthetic, redistributable records used to explain contracts
+- `manifests/`: non-sensitive dataset inventories, fingerprints, and integrity notes
 
 Local by default and ignored by Git:
 
@@ -21,3 +22,6 @@ Each local dataset should have a non-sensitive manifest containing its version,
 source classes, schema version, record counts, split fingerprint, content hash,
 and redistribution decision. The governing policy is
 [../docs/data_card.md](../docs/data_card.md).
+
+The current local novel-pair inventory is documented in
+[`manifests/novel_pairs_2026-07-29.json`](manifests/novel_pairs_2026-07-29.json).

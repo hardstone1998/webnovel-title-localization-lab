@@ -105,9 +105,35 @@ evaluation contract.
 - [Error taxonomy](docs/error_taxonomy.md): annotation categories and severity
 - [Experiment plan](docs/experiment_plan.md): research sequence and promotion
   criteria
+- [Two-stage title selection](docs/two_stage_title_selection.md): Chinese usage
+  guide for 12-candidate generation, eight-dimension scoring, CLI operation,
+  artifacts, and provider setup
+
+## DeepSeek Quick Start
+
+The deterministic adapter remains the offline default. To opt into DeepSeek,
+keep the credential in the current PowerShell environment and select the
+reviewed provider preset explicitly:
+
+```powershell
+$env:DEEPSEEK_API_KEY = "<your-deepseek-api-key>"
+title-localization `
+  --input data/examples/sample_title_case.json `
+  --config configs/title_selection.deepseek.json `
+  --output-dir artifacts/deepseek-example-run `
+  --adapter openai-compatible
+```
+
+Do not put the key in configuration, source files, artifacts, or committed
+scripts. See the
+[DeepSeek setup guide](docs/two_stage_title_selection.md#使用-deepseek-api-key)
+for model selection, cleanup, and error behavior.
 
 ## Current Status
 
-The repository contains the architecture and research contracts only. Business
-logic, data collection, model training, and service code have not been
-implemented.
+The repository now includes an executable two-stage baseline: three generation
+strategies produce 12 English title candidates, then an eight-dimension model
+judge is verified with deterministic weighted arithmetic to select one eligible
+winner. The default deterministic adapter, schemas, CLI, synthetic example, and
+offline tests are implemented. Learned ranking, private-data ingestion, and
+online services remain future work.

@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/title-localization/ranking-result-1.0.schema.json",
+  "title": "RankingResult",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "ranking_id",
+    "candidate_set_id",
+    "candidate_set_fingerprint",
+    "sample_id",
+    "created_at",
+    "rubric_version",
+    "weight_version",
+    "weights",
+    "scoring_provenance",
+    "input_permutation",
+    "attempts",
+    "scores",
+    "ordered_candidate_ids",
+    "winner_candidate_id",
+    "outcome",
+    "no_winner_reason"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "ranking_id": { "type": "string", "pattern": "^rank_[a-f0-9]{16}$" },
+    "candidate_set_id": { "type": "string", "pattern": "^cset_[a-f0-9]{16}$" },
+    "candidate_set_fingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "sample_id": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "format": "date-time" },
+    "rubric_version": { "type": "string", "minLength": 1 },
+    "weight_version": { "type": "string", "minLength": 1 },
+    "weights": {
+      "type": "object",
+      "minProperties": 8,
+      "maxProperties": 8,
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 1
+      }
+    },
+    "scoring_provenance": { "type": "object" },
+    "input_permutation": {
+      "type": "array",
+      "minItems": 12,
+      "maxItems": 12,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^cand_[a-f0-9]{16}$" }
+    },
+    "attempts": { "type": "integer", "minimum": 1 },
+    "scores": {
+      "type": "array",
+      "minItems": 12,
+      "maxItems": 12,
+      "items": { "$ref": "#/$defs/candidateScore" }
+    },
+    "ordered_candidate_ids": {
+      "type": "array",
+      "minItems": 12,
+      "maxItems": 12,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^cand_[a-f0-9]{16}$" }
+    },
+    "winner_candidate_id": {
+      "oneOf": [
+        { "type": "string", "pattern": "^cand_[a-f0-9]{16}$" },
+        { "type": "null" }
+      ]
+    },
+    "outcome": { "enum": ["winner_selected", "no_eligible_winner"] },
+    "no_winner_reason": {
+      "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }]
+    }
+  },
+  "$defs": {
+    "dimensionScore": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "score",
+        "rationale",
+        "model_contribution",
+        "authoritative_contribution"
+      ],
+      "properties": {
+        "score": { "type": "integer", "minimum": 1, "maximum": 10 },
+        "rationale": { "type": "string", "minLength": 1 },
+        "model_contribution": { "type": "number" },
+        "authoritative_contribution": { "type": "number" }
+      }
+    },
+    "violation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "severity", "rationale", "evidence_field"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "severity": { "enum": ["critical", "major", "minor", "note"] },
+        "rationale": { "type": "string", "minLength": 1 },
+        "evidence_field": { "type": "string" }
+      }
+    },
+    "candidateScore": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_id",
+        "title",
+        "dimensions",
+        "violations",
+        "model_total",
+        "authoritative_total",
+        "arithmetic_mismatch",
+        "eligible"
+      ],
+      "properties": {
+        "candidate_id": { "type": "string", "pattern": "^cand_[a-f0-9]{16}$" },
+        "title": { "type": "string", "minLength": 1 },
+        "dimensions": {
+          "type": "object",
+          "minProperties": 8,
+          "maxProperties": 8,
+          "additionalProperties": { "$ref": "#/$defs/dimensionScore" }
+        },
+        "violations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/violation" }
+        },
+        "model_total": { "type": "number" },
+        "authoritative_total": { "type": "number", "minimum": 10, "maximum": 100 },
+        "arithmetic_mismatch": { "type": "boolean" },
+        "eligible": { "type": "boolean" }
+      }
+    }
+  }
+}

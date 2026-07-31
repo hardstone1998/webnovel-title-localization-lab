@@ -1,4 +1,8 @@
-﻿[project]
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
 name = "webnovel-title-localization-lab"
 version = "0.1.0"
 description = "A lightweight lab for web-novel title localization and preference ranking."
@@ -9,8 +13,12 @@ authors = [
 ]
 dependencies = []
 
+[project.scripts]
+title-localization = "title_localization_lab.cli:main"
+
 [project.optional-dependencies]
 dev = [
+  "jsonschema>=4.23.0",
   "pytest>=8.0.0",
   "ruff>=0.5.0"
 ]
@@ -21,3 +29,6 @@ src = ["src", "tests"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/title_localization_lab"]

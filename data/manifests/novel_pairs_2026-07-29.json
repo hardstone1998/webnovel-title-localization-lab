@@ -1,0 +1,90 @@
+{
+  "dataset_id": "zh-en-novel-metadata-pairs",
+  "manifest_version": "1.0",
+  "manifest_date": "2026-07-29",
+  "storage_root": "data/processed/novel_pairs",
+  "source_classes": [
+    "Qidian-Webnovel curated mapping corpus",
+    "WebNovel metadata",
+    "Qidian metadata"
+  ],
+  "redistribution_decision": "local_only_pending_provenance_and_license_review",
+  "datasets": {
+    "100": {
+      "parser_version": "novel-pair-metadata-v1.0",
+      "records": 100,
+      "columns": 42,
+      "unique_pair_ids": 100,
+      "pair_id_order_sha256": "b5738fc6c03e659c5f731f5ce63eb4d440357b409aef174f8e2e584fba37c31d",
+      "pair_id_set_sha256": "c5db3697da3e413f093ed5214987df28f85f80fdad0591b2cba065942f2955ab",
+      "partitions": null,
+      "files": {
+        "中英文小说元信息配对_100对.xlsx": "d80d642c34cda6291f076506ea3f9ba1c5e7b5da52df9517614628966ecdccc6",
+        "novel_pairs_100.csv": "7d8c2f1166efa345c640e87a5c8ae4fa4c52bac28f0b899b143245283d6e473e",
+        "novel_pairs_100.jsonl": "3275317d63950313df2650ca11301e0e1eea71db2f22a444c1b6936ad0bd34b3"
+      }
+    },
+    "1000": {
+      "parser_version": "novel-pair-metadata-v2.0",
+      "records": 1000,
+      "columns": 51,
+      "unique_pair_ids": 1000,
+      "pair_id_order_sha256": "3032e6c28df1d4b3ab58a5926f5d6eecb862fca19d8f928e3f3455fdfd6de745",
+      "pair_id_set_sha256": "6e209c89ae4f8d645b02efae6505e931aa89a2741e827a6ab012cddae90ca21c",
+      "partitions": {
+        "high_confidence_formal": 997,
+        "low_confidence_review": 3,
+        "overlap": 0,
+        "union_equals_full": true,
+        "partition_rows_equal_full_rows": true
+      },
+      "files": {
+        "中英文小说元信息配对_1000对.xlsx": "732caf063ac3eab6cd3786c8af2912c7b981e64a902289ab058174df7cad2654",
+        "novel_pairs_1000.csv": "41fc4fd774a7e649ed4bf734acf694075c2bc657fa64da1d6931325ee01cf1fd",
+        "novel_pairs_1000.jsonl": "3e3bdef2b6f7752acac7631b7f46f7c58fcdfa11ca4fac032bf68434d120657f",
+        "high_confidence_formal.csv": "68fa83cdaade80daff8b97e6903e5f660ebba10abae57d5f4c87e6c4974607a6",
+        "low_confidence_review.csv": "ef057272f8f2a777eb6dfdea86bebfe26246fce83c28832c96803789358f5094"
+      }
+    },
+    "10000": {
+      "parser_version": "novel-pair-metadata-v3.0",
+      "records": 10000,
+      "columns": 51,
+      "unique_pair_ids": 10000,
+      "pair_id_order_sha256": "39da8df4f3135caeea349b960fb0db897ace6e5aed385c8f43a6ead230948259",
+      "pair_id_set_sha256": "d744f63173d07d65c8d00aef087f28574b09acc079ec28ee8c710d4a95b761d3",
+      "partitions": {
+        "high_confidence_formal": 4995,
+        "low_confidence_review": 5005,
+        "overlap": 0,
+        "union_equals_full": true,
+        "partition_rows_equal_full_rows": true
+      },
+      "files": {
+        "中英文小说元信息配对_10000对.xlsx": "f557397ca59e1a749b09c4be7b0fa9130bd7df202e9112f5728c609f42b5185c",
+        "novel_pairs_10000.csv": "9e33a9d82113ed103499c9fad2bbf202633808c492b0376a9c61ed2d024fe6f4",
+        "novel_pairs_10000.jsonl": "31e4480580c899fbd931deba04306afad30b3647eb5214570c85eabcef12403d",
+        "high_confidence_formal.csv": "b7870bbbd04bef97f2d07bd9f5788577e344b61a4972bfbdd9a13c7e2e940f1f",
+        "low_confidence_review.csv": "daae26e505ce7fbd92a322057645333acd9bb8e84cd69cfd5189bfa263a2fd95"
+      },
+      "jsonl_repair": {
+        "reason": "original file was truncated at JSONL line 4738",
+        "validated_original_prefix_records": 4737,
+        "rebuild_source": "novel_pairs_10000.csv",
+        "quarantined_original": "data/interim/quarantine/novel_pairs_10000_truncated_at_line_4738.jsonl",
+        "quarantined_original_sha256": "d9c03878797179fea856d24e0eb69a2f92a0e7c4000fd1f6dbf8c2dc47b0892d"
+      }
+    }
+  },
+  "relationships": {
+    "100_pair_ids_subset_of_1000": true,
+    "100_pair_ids_overlap_1000": 100,
+    "1000_pair_ids_subset_of_10000": false,
+    "1000_pair_ids_overlap_10000": 993
+  },
+  "integrity_checks": {
+    "csv_jsonl_record_counts_match": true,
+    "csv_jsonl_pair_id_order_matches": true,
+    "pair_ids_unique_within_each_full_dataset": true
+  }
+}
