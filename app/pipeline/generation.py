@@ -10,8 +10,8 @@ from datetime import datetime, timezone
 from hashlib import sha256
 from typing import Any, Protocol
 
-from .config import GenerationConfig
-from .contracts import (
+from ..config.pipeline_config import GenerationConfig
+from ..domain.contracts import (
     CANDIDATE_SET_SCHEMA_VERSION,
     STRATEGIES,
     Candidate,
@@ -20,7 +20,7 @@ from .contracts import (
     SourceRecord,
     fingerprint,
 )
-from .errors import GenerationError
+from ..domain.errors import GenerationError
 
 _CJK_PATTERN = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]")
 _ASCII_LETTER_PATTERN = re.compile(r"[A-Za-z]")
@@ -71,6 +71,7 @@ def generation_context(
 ) -> dict[str, Any]:
     shared = {
         "genre": source.genre,
+        "genre_zh": source.genre_zh,
         "target_locale": config.target_locale,
     }
     if strategy == "source_title":

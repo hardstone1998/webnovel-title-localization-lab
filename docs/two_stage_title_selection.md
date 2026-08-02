@@ -24,6 +24,7 @@
 | `source_language` | `zh` 或以 `zh` 开头的语言代码 |
 | `target_language` | `en` 或以 `en` 开头的语言代码 |
 | `genre` | 作品类型 |
+| `genre_zh` | 原始中文作品类型；生成与评分阶段均传给模型 |
 | `synopsis` | 非空故事简介 |
 
 可直接使用公开合成示例：`data/examples/sample_title_case.json`。
@@ -49,11 +50,46 @@ title-localization `
 也可以不依赖控制台入口：
 
 ```powershell
-python -m title_localization_lab `
+python -m app `
   --input data/examples/sample_title_case.json `
   --config configs/title_selection.default.json `
   --output-dir artifacts/example-run
 ```
+
+## FastAPI 调用方式
+
+安装依赖后，可在项目根目录启动同步 API 服务：
+
+```powershell
+uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+服务提供 `GET /healthz`、`GET /docs` 和 `POST /v1/title-localizations`。
+请求中的 `source` 必须包含本节输入要求的全部字段，包括 `genre_zh`；该字段会同时传递给生成与评分阶段的模型提示。`config_profile` 仅支持 `default` 或 `deepseek`，`adapter` 仅支持 `deterministic` 或 `openai-compatible`。
+
+```powershell
+$body = @{
+  source = @{
+    sample_id = "api_example_001"
+    source_title = "开局觉醒神级签到系统"
+    source_language = "zh"
+    target_language = "en"
+    genre = "system_fantasy"
+    genre_zh = "系统玄幻"
+    synopsis = "A cultivator gains a check-in system after being expelled from his sect."
+  }
+  config_profile = "default"
+  adapter = "deterministic"
+} | ConvertTo-Json -Depth 4
+
+Invoke-RestMethod `
+  -Method Post `
+  -Uri http://127.0.0.1:8000/v1/title-localizations `
+  -ContentType "application/json" `
+  -Body $body
+```
+
+该接口会同步等待模型完成并直接返回候选集、排名结果和 Markdown 报告，不创建 API 专用制品目录。首版没有认证、限流、批量任务或持久化结果；请仅在受信网络或受保护的部署环境中使用。
 
 ## 八个评分维度
 

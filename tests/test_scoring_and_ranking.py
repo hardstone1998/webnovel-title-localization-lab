@@ -4,19 +4,19 @@ from dataclasses import replace
 from decimal import Decimal
 
 import pytest
-
-from title_localization_lab.adapters import DeterministicAdapter
-from title_localization_lab.contracts import DIMENSIONS, fingerprint
-from title_localization_lab.errors import ScoringError
-from title_localization_lab.scoring import (
+from app.domain.contracts import DIMENSIONS, fingerprint
+from app.domain.errors import ScoringError
+from app.llm.adapters import DeterministicAdapter
+from app.pipeline.scoring import (
     ModelCandidateScore,
     ModelDimensionScore,
     ModelViolation,
     ScoringRequest,
     ScoringResponse,
     TitleRanker,
+    build_scoring_prompt,
 )
-from title_localization_lab.validation import validate_ranking_result
+from app.validators.validation import validate_ranking_result
 
 
 class ScoringTransformAdapter(DeterministicAdapter):
@@ -48,6 +48,18 @@ def test_all_candidates_receive_complete_scores_and_one_winner(
     assert result.outcome == "winner_selected"
     assert all(set(item.dimensions) == set(DIMENSIONS) for item in result.scores)
     assert all(Decimal(10) <= item.authoritative_total <= Decimal(100) for item in result.scores)
+
+
+def test_scoring_prompt_includes_chinese_genre_for_model_decision(
+    source,
+    candidate_set,
+    pipeline_config,
+) -> None:
+    candidates = tuple((item.candidate_id, item.title) for item in candidate_set.candidates)
+
+    prompt = build_scoring_prompt(source, candidates, pipeline_config.scoring)
+
+    assert '"genre_zh": "系统玄幻"' in prompt
 
 
 def test_incomplete_pool_is_retried_then_rejected(

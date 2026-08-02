@@ -10,11 +10,11 @@ import urllib.request
 from decimal import Decimal
 from typing import Any
 
-from .config import PipelineConfig
-from .contracts import DIMENSIONS
-from .errors import ProviderError
-from .generation import GenerationRequest, GenerationResponse
-from .scoring import (
+from ..config.pipeline_config import PipelineConfig
+from ..domain.contracts import DIMENSIONS
+from ..domain.errors import ProviderError
+from ..pipeline.generation import GenerationRequest, GenerationResponse
+from ..pipeline.scoring import (
     ModelCandidateScore,
     ModelDimensionScore,
     ModelViolation,

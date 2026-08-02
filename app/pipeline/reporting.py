@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .contracts import CandidateSet, RankingResult
+from ..domain.contracts import CandidateSet, RankingResult
 
 
 def render_markdown_report(

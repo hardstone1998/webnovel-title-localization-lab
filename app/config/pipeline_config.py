@@ -7,8 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .contracts import DIMENSIONS, STRATEGIES
-from .errors import ValidationError
+from ..domain.contracts import DIMENSIONS, STRATEGIES
+from ..domain.errors import ValidationError
 
 
 @dataclass(frozen=True)

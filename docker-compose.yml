@@ -1,0 +1,17 @@
+services:
+  title-localization-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: webnovel-title-localization:latest
+    env_file:
+      - .env
+    ports:
+      - "${HOST_PORT:-8000}:8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

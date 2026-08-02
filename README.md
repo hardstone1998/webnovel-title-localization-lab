@@ -1,8 +1,8 @@
 # WebNovel Title Localization Lab
 
-A small, reproducible research lab for generating and ranking English titles for
-Chinese web novels. It is designed as an evaluation-first portfolio project, not
-as a production translation platform.
+A reproducible research lab and synchronous Web API for generating and ranking
+English titles for Chinese web novels. It is evaluation-first and deployable as
+a small protected service, not a reader-facing translation platform.
 
 ## Research Question
 
@@ -26,7 +26,7 @@ The first complete research cycle is intentionally narrow:
 - web-novel title localization
 - title, synopsis, genre, protagonist, conflict, and hook as input context
 - six to eight candidates and a ranked Top 3 as output
-- offline evaluation only
+- offline evaluation and a synchronous HTTP API
 
 Full-text translation, a reader-facing product, live CTR optimization, broad web
 crawling, reinforcement learning, and multilingual expansion are outside the
@@ -67,14 +67,20 @@ The detailed boundaries and future package map are documented in
 
 ```text
 webnovel-title-localization-lab/
+|-- app/           # FastAPI entry point and application layers
+|   |-- api/       # HTTP routes and error responses
+|   |-- config/    # environment and reviewed profile loading
+|   |-- domain/    # API models, contracts, and errors
+|   |-- llm/       # deterministic and provider adapters
+|   |-- pipeline/  # generation, ranking, and orchestration
+|   |-- utils/     # artifact, logging, and conversion helpers
+|   `-- validators/# pipeline contract validation
 |-- configs/       # reviewed experiment configuration
 |-- data/
 |   |-- examples/  # redistributable synthetic records
 |   `-- schemas/   # versioned public data contracts
 |-- docs/          # architecture, data, evaluation, and research decisions
 |-- experiments/   # experiment manifests and short result reports
-|-- src/
-|   `-- title_localization_lab/
 `-- tests/         # contract, unit, integration, and regression checks
 ```
 
@@ -129,11 +135,64 @@ scripts. See the
 [DeepSeek setup guide](docs/two_stage_title_selection.md#使用-deepseek-api-key)
 for model selection, cleanup, and error behavior.
 
+## FastAPI Service
+
+Copy the environment template when configuring a provider (the deterministic
+adapter does not require a key), then start the synchronous API locally:
+
+```powershell
+Copy-Item .env.example .env
+uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+The service exposes `GET /`, `GET /healthz`, `GET /health`, `GET /readyz`,
+interactive OpenAPI documentation at `/docs`, and `POST /v1/title-localizations`.
+Every response includes `X-Request-ID`; pass that header to correlate logs. It accepts only the reviewed
+`default` and `deepseek` configuration profiles, and the `deterministic` and
+`openai-compatible` adapters. The first release is synchronous and is intended
+for trusted local or protected deployments; it does not include authentication,
+rate limiting, batch jobs, or persisted API results.
+
+Run the containerized service after creating `.env`:
+
+```powershell
+docker compose up --build
+```
+
+The API listens on port `8000` by default; set `HOST_PORT` in `.env` to change
+the host-side port. The image runs a single API process and has no Redis, worker,
+database, or persistent result volume.
+
+Example deterministic request:
+
+```powershell
+$body = @{
+  source = @{
+    sample_id = "api_example_001"
+    source_title = "开局觉醒神级签到系统"
+    source_language = "zh"
+    target_language = "en"
+    genre = "system_fantasy"
+    genre_zh = "系统玄幻"
+    synopsis = "A cultivator gains a check-in system after being expelled from his sect."
+  }
+  config_profile = "default"
+  adapter = "deterministic"
+} | ConvertTo-Json -Depth 4
+
+Invoke-RestMethod `
+  -Method Post `
+  -Uri http://127.0.0.1:8000/v1/title-localizations `
+  -ContentType "application/json" `
+  -Body $body
+```
+
 ## Current Status
 
-The repository now includes an executable two-stage baseline: three generation
+The repository now includes an executable two-stage baseline and a deployable
+FastAPI wrapper: three generation
 strategies produce 12 English title candidates, then an eight-dimension model
 judge is verified with deterministic weighted arithmetic to select one eligible
 winner. The default deterministic adapter, schemas, CLI, synthetic example, and
 offline tests are implemented. Learned ranking, private-data ingestion, and
-online services remain future work.
+asynchronous/online services remain future work.

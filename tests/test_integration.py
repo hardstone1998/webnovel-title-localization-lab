@@ -3,14 +3,14 @@ from __future__ import annotations
 import json
 
 import pytest
+from app.cli import main
+from app.config.pipeline_config import load_config
+from app.domain.contracts import SourceRecord
+from app.domain.errors import ProviderError
+from app.llm.adapters import DeterministicAdapter, OpenAICompatibleAdapter
+from app.pipeline.orchestration import run_pipeline, run_pipeline_for_source
+from app.utils.artifacts import atomic_write_json, read_json
 from jsonschema import Draft202012Validator
-
-from title_localization_lab.adapters import OpenAICompatibleAdapter
-from title_localization_lab.artifacts import atomic_write_json, read_json
-from title_localization_lab.cli import main
-from title_localization_lab.config import load_config
-from title_localization_lab.errors import ProviderError
-from title_localization_lab.orchestration import run_pipeline
 
 
 class StubHTTPResponse:
@@ -48,6 +48,24 @@ def test_deterministic_pipeline_writes_schema_valid_artifacts(
     assert outcome.report_path.read_text(encoding="utf-8").startswith("# 英文剧名生成与评分报告")
 
 
+def test_in_memory_pipeline_matches_the_deterministic_candidate_contract(project_root) -> None:
+    source = SourceRecord.from_dict(
+        read_json(project_root / "data/examples/sample_title_case.json")
+    )
+    config = load_config(project_root / "configs/title_selection.default.json")
+
+    outcome = run_pipeline_for_source(
+        source,
+        config,
+        model_adapter=DeterministicAdapter(),
+    )
+
+    assert len(outcome.candidate_set.candidates) == 12
+    assert len(outcome.ranking.scores) == 12
+    assert outcome.ranking.winner_candidate_id
+    assert outcome.report
+
+
 def test_cli_runs_offline(project_root, tmp_path, capsys, monkeypatch) -> None:
     monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
 
@@ -55,7 +73,7 @@ def test_cli_runs_offline(project_root, tmp_path, capsys, monkeypatch) -> None:
         raise AssertionError("deterministic adapter attempted network access")
 
     monkeypatch.setattr(
-        "title_localization_lab.adapters.urllib.request.urlopen",
+        "app.llm.adapters.urllib.request.urlopen",
         fail_if_network_is_used,
     )
     exit_code = main(
@@ -116,7 +134,7 @@ def test_deepseek_request_uses_openai_compatible_json_contract(
     config = load_config(project_root / "configs/title_selection.deepseek.json")
     monkeypatch.setenv("DEEPSEEK_API_KEY", sentinel_key)
     monkeypatch.setattr(
-        "title_localization_lab.adapters.urllib.request.urlopen",
+        "app.llm.adapters.urllib.request.urlopen",
         fake_urlopen,
     )
 
@@ -161,7 +179,7 @@ def test_deepseek_missing_credential_writes_safe_error(
         raise AssertionError("missing credential should fail before network access")
 
     monkeypatch.setattr(
-        "title_localization_lab.adapters.urllib.request.urlopen",
+        "app.llm.adapters.urllib.request.urlopen",
         fail_if_network_is_used,
     )
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import Counter
 from typing import Any
 
-from .contracts import (
+from ..domain.contracts import (
     CANDIDATE_SET_SCHEMA_VERSION,
     DIMENSIONS,
     RANKING_RESULT_SCHEMA_VERSION,
@@ -13,8 +13,8 @@ from .contracts import (
     CandidateSet,
     RankingResult,
 )
-from .errors import ValidationError
-from .generation import candidate_id, is_english_title, normalize_title
+from ..domain.errors import ValidationError
+from ..pipeline.generation import candidate_id, is_english_title, normalize_title
 
 
 def validate_candidate_set(candidate_set: CandidateSet) -> None:

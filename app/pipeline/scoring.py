@@ -9,8 +9,8 @@ from datetime import datetime, timezone
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from typing import Any, Protocol
 
-from .config import ScoringConfig
-from .contracts import (
+from ..config.pipeline_config import ScoringConfig
+from ..domain.contracts import (
     CRITICAL_CODES,
     DIMENSIONS,
     RANKING_RESULT_SCHEMA_VERSION,
@@ -22,7 +22,7 @@ from .contracts import (
     Violation,
     fingerprint,
 )
-from .errors import ScoringError, ValidationError
+from ..domain.errors import ScoringError, ValidationError
 
 _TWO_PLACES = Decimal("0.01")
 _ALLOWED_SEVERITIES = {"critical", "major", "minor", "note"}
@@ -109,6 +109,7 @@ def build_scoring_prompt(
         "source_title": source.source_title,
         "synopsis": source.synopsis,
         "genre": source.genre,
+        "genre_zh": source.genre_zh,
         "source_language": source.source_language,
         "target_language": source.target_language,
     }

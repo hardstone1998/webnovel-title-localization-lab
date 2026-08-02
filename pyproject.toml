@@ -11,24 +11,29 @@ requires-python = ">=3.10"
 authors = [
   { name = "Your Name" }
 ]
-dependencies = []
+dependencies = [
+  "fastapi>=0.115.0",
+  "uvicorn>=0.30.0",
+]
 
 [project.scripts]
-title-localization = "title_localization_lab.cli:main"
+title-localization = "app.cli:main"
 
 [project.optional-dependencies]
 dev = [
   "jsonschema>=4.23.0",
   "pytest>=8.0.0",
-  "ruff>=0.5.0"
+  "ruff>=0.5.0",
+  "httpx>=0.28.0",
 ]
 
 [tool.ruff]
 line-length = 100
-src = ["src", "tests"]
+src = ["app", "tests"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "--basetemp .pytest-tmp -p no:cacheprovider"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/title_localization_lab"]
+packages = ["app"]

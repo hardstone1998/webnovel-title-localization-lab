@@ -8,8 +8,8 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from .errors import LabError
-from .orchestration import run_pipeline
+from .domain.errors import LabError
+from .pipeline.orchestration import run_pipeline
 
 
 def build_parser() -> argparse.ArgumentParser:

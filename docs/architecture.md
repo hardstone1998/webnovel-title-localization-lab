@@ -2,9 +2,9 @@
 
 ## Purpose
 
-The architecture supports controlled research, not an online product. Its main
-job is to keep data, candidate generation, ranking, and evaluation independently
-replaceable and reproducible.
+The architecture supports controlled research and a synchronous protected Web
+API. Its main job is to keep data, candidate generation, ranking, and evaluation
+independently replaceable and reproducible.
 
 ## Logical Flow
 
@@ -54,29 +54,24 @@ contain model-specific or metric-specific logic.
 This direction keeps a model provider change from affecting the dataset format
 or evaluation rules.
 
-## Planned Package Map
+## Package Map
 
-The following map is a target for implementation, not a set of empty packages to
-create immediately:
+The implemented package map follows the service organization used by the
+reference API while keeping the research pipeline isolated from HTTP concerns:
 
 ```text
-title_localization_lab/
-|-- contracts/       # typed domain records and schema versions
-|-- data/            # validation, normalization, splits, fingerprints
-|-- generation/      # candidate strategies and generation interface
-|-- constraints/     # hard checks and violation records
-|-- ranking/
-|   |-- rules/       # deterministic baseline
-|   |-- judges/      # LLM judging protocols
-|   `-- learned/     # trainable ranking models
-|-- evaluation/      # metrics, robustness, and error analysis
-|-- orchestration/   # experiment-stage composition
-|-- reporting/       # human-readable research outputs
-`-- adapters/        # external model and storage integrations
+app/
+|-- api/             # routes, safe HTTP errors, health checks
+|-- config/          # environment settings and pipeline config parsing
+|-- domain/          # typed contracts, API models, domain errors
+|-- llm/             # deterministic and OpenAI-compatible adapters
+|-- pipeline/        # generation, scoring, reporting, orchestration
+|-- utils/           # artifacts, logging, input conversion
+`-- validators/      # contract and hard-constraint validation
 ```
 
-Create a package only when its first behavior and test arrive together. This
-avoids a large empty scaffold while preserving a clear destination.
+Each package owns behavior with corresponding tests; HTTP routes do not embed
+provider or ranking decisions.
 
 ## Core Artifact Contracts
 
@@ -128,7 +123,7 @@ Before a learned ranker begins:
 
 ## Non-Goals
 
-The initial architecture does not include a web API, user accounts, online
-feedback ingestion, model serving, distributed jobs, a feature store, or a
-general workflow platform. Those concerns should be introduced only when a
-research result requires them.
+The initial architecture does not include user accounts, online feedback
+ingestion, distributed jobs, a feature store, or a general workflow platform.
+The synchronous API does not persist requests or results, and it has no queue
+worker, database, or authentication layer.

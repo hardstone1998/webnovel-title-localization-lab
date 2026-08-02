@@ -63,6 +63,7 @@ class SourceRecord:
     source_language: str
     target_language: str
     genre: str
+    genre_zh: str
     synopsis: str
     published_target_title: str = ""
     metadata: dict[str, Any] = field(default_factory=dict)
@@ -75,6 +76,7 @@ class SourceRecord:
             "source_language",
             "target_language",
             "genre",
+            "genre_zh",
             "synopsis",
         )
         missing = [key for key in required if not str(data.get(key, "")).strip()]
@@ -107,6 +109,7 @@ class SourceRecord:
             source_language=str(data["source_language"]).strip(),
             target_language=str(data["target_language"]).strip(),
             genre=str(data["genre"]).strip(),
+            genre_zh=str(data["genre_zh"]).strip(),
             synopsis=str(data["synopsis"]).strip(),
             published_target_title=str(data.get("published_target_title", "")).strip(),
             metadata=metadata,

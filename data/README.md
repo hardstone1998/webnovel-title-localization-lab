@@ -8,6 +8,7 @@ Tracked in Git:
 - `schemas/`: versioned data contracts
 - `examples/`: synthetic, redistributable records used to explain contracts
 - `manifests/`: non-sensitive dataset inventories, fingerprints, and integrity notes
+- `batch_tests/`: version-controlled request inputs and deterministic batch-validation outputs
 
 Local by default and ignored by Git:
 

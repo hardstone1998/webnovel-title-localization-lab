@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "TitleLocalizationSample",
   "type": "object",
-  "required": ["sample_id", "source_title", "source_language", "target_language", "genre", "synopsis"],
+  "required": ["sample_id", "source_title", "source_language", "target_language", "genre", "genre_zh", "synopsis"],
   "properties": {
     "sample_id": { "type": "string" },
     "source_title": { "type": "string" },
@@ -10,6 +10,7 @@
     "source_language": { "type": "string" },
     "target_language": { "type": "string" },
     "genre": { "type": "string" },
+    "genre_zh": { "type": "string" },
     "synopsis": { "type": "string" },
     "candidates": {
       "type": "array",

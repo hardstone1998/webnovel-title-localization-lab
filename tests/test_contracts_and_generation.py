@@ -5,24 +5,23 @@ import json
 from collections import Counter
 
 import pytest
-from jsonschema import Draft202012Validator
-
-from title_localization_lab.adapters import DeterministicAdapter
-from title_localization_lab.artifacts import atomic_write_json, read_json
-from title_localization_lab.config import parse_config
-from title_localization_lab.contracts import SourceRecord
-from title_localization_lab.errors import GenerationError, ValidationError
-from title_localization_lab.generation import (
+from app.config.pipeline_config import parse_config
+from app.domain.contracts import SourceRecord
+from app.domain.errors import GenerationError, ValidationError
+from app.llm.adapters import DeterministicAdapter
+from app.pipeline.generation import (
     CandidateGenerator,
     GenerationRequest,
     GenerationResponse,
     candidate_id,
     normalize_title,
 )
-from title_localization_lab.validation import (
+from app.utils.artifacts import atomic_write_json, read_json
+from app.validators.validation import (
     assert_schema_document,
     validate_candidate_set,
 )
+from jsonschema import Draft202012Validator
 
 
 def test_source_record_rejects_missing_and_wrong_language() -> None:
@@ -32,6 +31,7 @@ def test_source_record_rejects_missing_and_wrong_language() -> None:
         "source_language": "zh",
         "target_language": "en",
         "genre": "fantasy",
+        "genre_zh": "玄幻",
         "synopsis": "故事简介",
     }
     missing = dict(valid)
@@ -43,6 +43,12 @@ def test_source_record_rejects_missing_and_wrong_language() -> None:
     with pytest.raises(ValidationError) as error:
         SourceRecord.from_dict(wrong_language)
     assert error.value.code == "INVALID_LANGUAGE_DIRECTION"
+
+    missing_genre_zh = dict(valid)
+    missing_genre_zh.pop("genre_zh")
+    with pytest.raises(ValidationError) as error:
+        SourceRecord.from_dict(missing_genre_zh)
+    assert error.value.details["fields"] == ["genre_zh"]
 
 
 def test_config_rejects_unknown_dimension_and_bad_weight_total(
@@ -112,6 +118,8 @@ def test_generation_strategy_context_is_isolated(source, pipeline_config) -> Non
     assert "synopsis" not in contexts["source_title"]
     assert "source_title" not in contexts["synopsis"]
     assert {"source_title", "synopsis", "target_market"} <= set(contexts["market_localized"])
+    assert all(context["genre_zh"] == "系统玄幻" for context in contexts.values())
+    assert all('"genre_zh": "系统玄幻"' in request.prompt for request in adapter.requests)
 
 
 class DuplicateThenRepairAdapter(DeterministicAdapter):

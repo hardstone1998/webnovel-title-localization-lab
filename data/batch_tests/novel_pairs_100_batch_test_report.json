@@ -1,0 +1,6 @@
+{
+  "status": "passed",
+  "input_path": "data/batch_tests/novel_pairs_100_request_inputs.jsonl",
+  "output_path": "data/batch_tests/novel_pairs_100_validation_output.jsonl",
+  "validated_count": 100
+}

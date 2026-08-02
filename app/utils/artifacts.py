@@ -8,8 +8,8 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from .contracts import fingerprint
-from .errors import ValidationError
+from ..domain.contracts import fingerprint
+from ..domain.errors import ValidationError
 
 
 def read_json(path: str | Path) -> dict[str, Any]:
