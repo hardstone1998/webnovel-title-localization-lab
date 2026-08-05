@@ -3,12 +3,17 @@
 from __future__ import annotations
 
 import json
+import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from ..domain.contracts import DIMENSIONS, STRATEGIES
 from ..domain.errors import ValidationError
+from .settings import load_project_dotenv
+
+_ENV_VALUE = re.compile(r"^\$\{([A-Z][A-Z0-9_]*)(?::-([^}]*))?\}$")
 
 
 @dataclass(frozen=True)
@@ -151,6 +156,27 @@ def parse_config(data: dict[str, Any]) -> PipelineConfig:
             details={"expected": expected_ties},
         )
 
+    provider = dict(data.get("provider", {}))
+    if "timeout_seconds" in provider:
+        try:
+            provider["timeout_seconds"] = int(provider["timeout_seconds"])
+        except (TypeError, ValueError) as exc:
+            raise ValidationError(
+                "provider.timeout_seconds 必须是整数。",
+                code="INVALID_CONFIGURATION_VALUE",
+                details={"field": "provider.timeout_seconds"},
+            ) from exc
+    if "max_tokens" in provider:
+        try:
+            provider["max_tokens"] = int(provider["max_tokens"])
+        except (TypeError, ValueError) as exc:
+            raise ValidationError(
+                "provider.max_tokens 必须是整数。",
+                code="INVALID_CONFIGURATION_VALUE",
+                details={"field": "provider.max_tokens"},
+            ) from exc
+        _positive_int(provider["max_tokens"], "provider.max_tokens")
+
     return PipelineConfig(
         schema_version=str(data.get("schema_version", "")).strip(),
         generation=GenerationConfig(
@@ -170,11 +196,38 @@ def parse_config(data: dict[str, Any]) -> PipelineConfig:
             dimension_guidance={key: str(value) for key, value in guidance.items()},
             tie_break_order=tuple(scoring["tie_break_order"]),
         ),
-        provider=dict(data.get("provider", {})),
+        provider=provider,
     )
 
 
+def _resolve_environment_values(value: Any) -> Any:
+    """Resolve ``${VARIABLE}`` configuration values from the environment."""
+
+    if isinstance(value, dict):
+        return {key: _resolve_environment_values(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_resolve_environment_values(item) for item in value]
+    if not isinstance(value, str):
+        return value
+
+    match = _ENV_VALUE.fullmatch(value)
+    if not match:
+        return value
+    variable, default = match.groups()
+    resolved = os.getenv(variable)
+    if resolved is None or not resolved.strip():
+        if default is not None:
+            return default
+        raise ValidationError(
+            f"配置所需的环境变量 {variable} 未设置。",
+            code="CONFIG_ENVIRONMENT_VARIABLE_MISSING",
+            details={"environment_variable": variable},
+        )
+    return resolved
+
+
 def load_config(path: str | Path) -> PipelineConfig:
+    load_project_dotenv()
     try:
         data = json.loads(Path(path).read_text(encoding="utf-8-sig"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -185,4 +238,4 @@ def load_config(path: str | Path) -> PipelineConfig:
         ) from exc
     if not isinstance(data, dict):
         raise ValidationError("配置根节点必须是对象。", code="INVALID_CONFIG_ROOT")
-    return parse_config(data)
+    return parse_config(_resolve_environment_values(data))

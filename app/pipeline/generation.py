@@ -171,12 +171,13 @@ class CandidateGenerator:
                 except Exception as exc:
                     logger.error(
                         "model_call_failed request_id=%s stage=generation strategy=%s "
-                        "attempt=%s model_id=%s error_code=%s",
+                        "attempt=%s model_id=%s error_code=%s details=%s",
                         self.run_context.correlation_id,
                         strategy,
                         attempt,
                         model_id,
                         getattr(exc, "code", "MODEL_CALL_FAILED"),
+                        getattr(exc, "details", None),
                     )
                     raise
                 duration_ms = round((time.monotonic() - started_at) * 1000)

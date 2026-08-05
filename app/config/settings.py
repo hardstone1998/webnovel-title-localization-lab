@@ -8,6 +8,7 @@ from functools import lru_cache
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+_project_dotenv_loaded = False
 
 
 @dataclass(frozen=True)
@@ -17,15 +18,7 @@ class Settings:
     environment: str
     log_level: str
     cors_origins: tuple[str, ...]
-    default_config_path: Path
-    deepseek_config_path: Path
-
-    @property
-    def config_profiles(self) -> dict[str, Path]:
-        return {
-            "default": self.default_config_path,
-            "deepseek": self.deepseek_config_path,
-        }
+    pipeline_config_path: Path
 
 
 def _cors_origins(value: str) -> tuple[str, ...]:
@@ -48,17 +41,26 @@ def _load_dotenv(path: Path) -> None:
         os.environ.setdefault(key, value.strip().strip('"').strip("'"))
 
 
+def load_project_dotenv() -> None:
+    """Load the project's local environment file once, if it exists."""
+
+    global _project_dotenv_loaded
+    if _project_dotenv_loaded:
+        return
+    _load_dotenv(PROJECT_ROOT / ".env")
+    _project_dotenv_loaded = True
+
+
 @lru_cache
 def get_settings() -> Settings:
-    """Load settings from environment variables without reading secrets from files."""
+    """Load settings from environment variables and the local ``.env`` file."""
 
-    _load_dotenv(PROJECT_ROOT / ".env")
+    load_project_dotenv()
     return Settings(
         app_name=os.getenv("APP_NAME", "WebNovel Title Localization API"),
         app_version=os.getenv("APP_VERSION", "0.1.0"),
         environment=os.getenv("APP_ENV", "development"),
         log_level=os.getenv("LOG_LEVEL", "INFO").upper(),
         cors_origins=_cors_origins(os.getenv("CORS_ORIGINS", "")),
-        default_config_path=PROJECT_ROOT / "configs" / "title_selection.default.json",
-        deepseek_config_path=PROJECT_ROOT / "configs" / "title_selection.deepseek.json",
+        pipeline_config_path=PROJECT_ROOT / "configs" / "title_selection.default.json",
     )

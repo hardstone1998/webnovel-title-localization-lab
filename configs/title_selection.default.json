@@ -48,9 +48,10 @@
     ]
   },
   "provider": {
-    "model": "gpt-4.1-mini",
-    "base_url": "https://api.openai.com/v1",
-    "api_key_env": "TITLE_LOCALIZATION_API_KEY",
-    "timeout_seconds": 60
+    "model": "${LLM_MODEL:-gpt-4.1-mini}",
+    "base_url": "${LLM_BASE_URL:-https://api.openai.com/v1}",
+    "api_key_env": "LLM_API_KEY",
+    "timeout_seconds": "${LLM_TIMEOUT_SECONDS:-60}",
+    "max_tokens": "${LLM_MAX_TOKENS:-16000}"
   }
 }

@@ -16,15 +16,10 @@ Every run should save its fully resolved configuration. Do not store API keys,
 tokens, local absolute paths, private dataset text, or machine-specific settings
 here.
 
-Reviewed provider presets:
-
-- `title_selection.default.json`: default pipeline settings and generic
-  OpenAI-compatible provider example.
-- `title_selection.deepseek.json`: DeepSeek OpenAI-compatible endpoint using
-  `deepseek-v4-flash` and the `DEEPSEEK_API_KEY` environment variable.
-
-Provider presets contain only the environment-variable name used to resolve a
-credential. Never add an API key value to a checked-in configuration file.
+The single `title_selection.default.json` profile uses the OpenAI-compatible
+chat-completions protocol. It resolves its model, endpoint, timeout, and
+credential from `LLM_*` values in `.env` (or explicit process environment
+variables). Never add an API key value to a checked-in configuration file.
 
 Use descriptive experiment names such as `v1_pairwise_order_robustness` and add a
 schema version whenever a configuration shape changes.

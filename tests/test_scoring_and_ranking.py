@@ -5,7 +5,7 @@ from decimal import Decimal
 
 import pytest
 from app.domain.contracts import DIMENSIONS, fingerprint
-from app.domain.errors import ScoringError
+from app.domain.errors import ProviderError, ScoringError
 from app.llm.adapters import DeterministicAdapter
 from app.pipeline.scoring import (
     ModelCandidateScore,
@@ -25,6 +25,28 @@ class ScoringTransformAdapter(DeterministicAdapter):
 
     def score(self, request: ScoringRequest) -> ScoringResponse:
         return self.transform(super().score(request))
+
+
+class ProviderErrorThenSuccessAdapter(DeterministicAdapter):
+    def __init__(self, error_code: str) -> None:
+        self.error_code = error_code
+        self.calls = 0
+
+    def score(self, request: ScoringRequest) -> ScoringResponse:
+        self.calls += 1
+        if self.calls == 1:
+            raise ProviderError("temporary provider failure", code=self.error_code)
+        return super().score(request)
+
+
+class ProviderErrorAdapter(DeterministicAdapter):
+    def __init__(self, error_code: str) -> None:
+        self.error_code = error_code
+        self.calls = 0
+
+    def score(self, request: ScoringRequest) -> ScoringResponse:
+        self.calls += 1
+        raise ProviderError("provider failure", code=self.error_code)
 
 
 def rank_with(adapter, source, candidate_set, pipeline_config):
@@ -79,6 +101,36 @@ def test_incomplete_pool_is_retried_then_rejected(
         )
     assert error.value.code == "SCORING_ATTEMPTS_EXHAUSTED"
     assert error.value.details["attempts"] == pipeline_config.scoring.max_attempts
+
+
+def test_empty_provider_response_is_retried_then_ranking_succeeds(
+    source,
+    candidate_set,
+    pipeline_config,
+    caplog,
+) -> None:
+    adapter = ProviderErrorThenSuccessAdapter("PROVIDER_RESPONSE_EMPTY")
+
+    result = rank_with(adapter, source, candidate_set, pipeline_config)
+
+    assert adapter.calls == 2
+    assert result.attempts == 2
+    assert "model_call_retry" in caplog.text
+    assert "error_code=PROVIDER_RESPONSE_EMPTY" in caplog.text
+
+
+def test_nonrecoverable_provider_error_is_not_retried(
+    source,
+    candidate_set,
+    pipeline_config,
+) -> None:
+    adapter = ProviderErrorAdapter("PROVIDER_CREDENTIAL_MISSING")
+
+    with pytest.raises(ProviderError) as error:
+        rank_with(adapter, source, candidate_set, pipeline_config)
+
+    assert error.value.code == "PROVIDER_CREDENTIAL_MISSING"
+    assert adapter.calls == 1
 
 
 def test_out_of_range_score_is_rejected(

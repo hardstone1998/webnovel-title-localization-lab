@@ -65,7 +65,7 @@ uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
 服务提供 `GET /healthz`、`GET /readyz`、`GET /docs` 和 `POST /v1/title-localizations`。
-请求中的 `source` 必须包含本节输入要求的全部字段，包括 `genre_zh`；该字段会同时传递给生成与评分阶段的模型提示。`config_profile` 仅支持 `default` 或 `deepseek`，API 固定使用服务端受控的 `openai-compatible` 模型，不能传入 `adapter`。至少一个受控 profile 配置了有效模型和凭证时，`/readyz` 才返回就绪；该检查不会调用远端模型。
+请求中的 `source` 必须包含本节输入要求的全部字段，包括 `genre_zh`；该字段会同时传递给生成与评分阶段的模型提示。API 固定使用服务端通过 `.env` 配置的 `openai-compatible` 模型，不能传入 `adapter`。模型配置和凭证有效时，`/readyz` 才返回就绪；该检查不会调用远端模型。
 
 ```powershell
 $body = @{
@@ -78,7 +78,6 @@ $body = @{
     genre_zh = "系统玄幻"
     synopsis = "A cultivator gains a check-in system after being expelled from his sect."
   }
-  config_profile = "default"
 } | ConvertTo-Json -Depth 4
 
 Invoke-RestMethod `
@@ -156,57 +155,34 @@ Invoke-RestMethod `
 使用配置中的 `base_url`、`model` 和 `timeout_seconds` 发起结构化 JSON 请求。凭证只从 `api_key_env` 指定的环境变量读取；默认变量为：
 
 ```powershell
-$env:TITLE_LOCALIZATION_API_KEY = "<your-key>"
+$env:LLM_API_KEY = "<your-key>"
 ```
 
 凭证不会写入配置、制品或错误报告。
 
-### 使用 DeepSeek API Key
+### 使用 OpenAI-compatible Provider
 
-项目提供 `configs/title_selection.deepseek.json` 预设，通过同一个
-`openai-compatible` 适配器访问 DeepSeek。先在当前 PowerShell 会话中设置
-API Key：
-
-```powershell
-$env:DEEPSEEK_API_KEY = "<your-deepseek-api-key>"
-```
-
-然后运行完整的候选生成与评分流程：
+在 `.env` 中设置 `LLM_MODEL`、`LLM_BASE_URL`、`LLM_TIMEOUT_SECONDS`、
+`LLM_MAX_TOKENS` 和 `LLM_API_KEY`。任何支持 OpenAI Chat Completions API 的服务都使用同一个
+适配器；无需更改代码或选择不同 profile：
 
 ```powershell
 title-localization `
   --input data/examples/sample_title_case.json `
-  --config configs/title_selection.deepseek.json `
-  --output-dir artifacts/deepseek-example-run `
+  --config configs/title_selection.default.json `
+  --output-dir artifacts/provider-example-run `
   --adapter openai-compatible
 ```
 
-环境变量只对当前 PowerShell 进程及其子进程有效。使用完毕后可以清除：
+不要把真实 Key 写入 JSON 配置、源代码、生成制品或提交到仓库的脚本。如果
+`LLM_API_KEY` 未设置，程序会在访问网络前返回
+`PROVIDER_CREDENTIAL_MISSING`，并指出缺失的变量名。
 
-```powershell
-Remove-Item Env:DEEPSEEK_API_KEY
-```
-
-不要把真实 Key 写入 JSON 配置、源代码、生成制品或提交到仓库的脚本。
-配置文件只保存环境变量名 `DEEPSEEK_API_KEY`。如果变量未设置，程序会在
-访问网络前返回 `PROVIDER_CREDENTIAL_MISSING`，并指出缺失的变量名。
-
-该预设当前使用 `deepseek-v4-flash`，基础地址为
-`https://api.deepseek.com`。模型名称属于外部供应商配置，可能随时间变化；
-运行前可查看 [DeepSeek 官方模型与价格列表](https://api-docs.deepseek.com/quick_start/pricing)。
-若要使用其他受支持且具有 JSON Output 能力的模型，复制预设后只修改
-`provider.model`，不要添加 API Key 字段：
-
-```powershell
-Copy-Item `
-  configs/title_selection.deepseek.json `
-  configs/title_selection.deepseek.custom.json
-```
-
-DeepSeek 的 JSON Output 要求提示词明确要求 JSON。本项目的候选生成和评分
-提示词已经包含该要求，并由适配器设置
-`response_format={"type":"json_object"}`。如果供应商返回空内容、截断内容或
-无效 JSON，程序会按现有供应商响应错误处理，不会发布不完整结果。
+JSON Output 要求提示词明确要求 JSON。本项目的候选生成和评分提示词已经包含该要求，并由适配器设置
+`response_format={"type":"json_object"}`。当模型为 `deepseek-*` 时，评分请求会发送
+`LLM_MAX_TOKENS`（默认 `16000`），为 12 个候选的八维 JSON 评分保留足够输出空间；生成请求保持供应商默认值。
+空内容、无效 JSON、传输失败或评分结构无效会在评分重试额度内重试。供应商完成日志会记录安全的
+`finish_reason`、`usage`、推理字段存在性与正文状态，但不会记录模型正文或推理文本。
 
 ## 失败与退出码
 

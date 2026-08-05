@@ -22,14 +22,12 @@ def healthz() -> dict[str, str]:
 
 @router.get("/readyz")
 def readyz(request: Request):
-    """Confirm that at least one reviewed model profile is locally usable."""
+    """Confirm that the configured OpenAI-compatible model is locally usable."""
 
     settings = request.app.state.settings
-    for config_path in settings.config_profiles.values():
-        try:
-            config = load_config(config_path)
-            validate_openai_compatible_availability(config.provider)
-        except LabError:
-            continue
-        return {"status": "ready"}
-    return JSONResponse(status_code=503, content={"status": "not_ready"})
+    try:
+        config = load_config(settings.pipeline_config_path)
+        validate_openai_compatible_availability(config.provider)
+    except LabError:
+        return JSONResponse(status_code=503, content={"status": "not_ready"})
+    return {"status": "ready"}

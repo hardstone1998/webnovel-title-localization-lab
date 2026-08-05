@@ -72,14 +72,13 @@ def test_healthz_reports_ready() -> None:
     assert response.json() == {"status": "ok"}
 
 
-def test_readiness_requires_at_least_one_configured_model(monkeypatch) -> None:
-    monkeypatch.delenv("TITLE_LOCALIZATION_API_KEY", raising=False)
-    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+def test_readiness_requires_configured_model(monkeypatch) -> None:
+    monkeypatch.delenv("LLM_API_KEY", raising=False)
     client = TestClient(create_app())
 
     assert client.get("/readyz").status_code == 503
 
-    monkeypatch.setenv("TITLE_LOCALIZATION_API_KEY", "test-key")
+    monkeypatch.setenv("LLM_API_KEY", "test-key")
     assert client.get("/readyz").json() == {"status": "ready"}
 
 
@@ -120,7 +119,7 @@ def test_localization_api_returns_compact_model_result(project_root, caplog) -> 
     assert "model_call_started request_id=request-logs-123 stage=scoring" in messages
     assert "model_call_completed request_id=request-logs-123 stage=scoring" in messages
     assert "selection_completed request_id=request-logs-123" in messages
-    assert "TITLE_LOCALIZATION_API_KEY" not in messages
+    assert "LLM_API_KEY" not in messages
     assert "Authorization" not in messages
     assert _request_payload(project_root)["source"]["synopsis"] not in messages
 
@@ -159,7 +158,7 @@ def test_localization_api_rejects_missing_genre_zh(project_root) -> None:
 
 
 def test_localization_api_returns_no_data_when_model_credential_is_missing(project_root, monkeypatch) -> None:
-    monkeypatch.delenv("TITLE_LOCALIZATION_API_KEY", raising=False)
+    monkeypatch.delenv("LLM_API_KEY", raising=False)
     response = TestClient(create_app()).post(
         "/v1/title-localizations", json=_request_payload(project_root)
     )
@@ -173,7 +172,7 @@ def test_localization_api_returns_no_data_when_model_credential_is_missing(proje
 
 
 def test_localization_api_returns_no_data_when_provider_fails(project_root, monkeypatch) -> None:
-    monkeypatch.setenv("TITLE_LOCALIZATION_API_KEY", "test-key")
+    monkeypatch.setenv("LLM_API_KEY", "test-key")
     monkeypatch.setattr("app.pipeline.service.create_adapter", lambda *_: FailingAdapter())
 
     response = TestClient(create_app()).post(

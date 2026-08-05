@@ -115,30 +115,28 @@ evaluation contract.
   guide for 12-candidate generation, eight-dimension scoring, CLI operation,
   artifacts, and provider setup
 
-## DeepSeek Quick Start
+## OpenAI-compatible Provider Quick Start
 
-The deterministic adapter remains the offline default. To opt into DeepSeek,
-keep the credential in the current PowerShell environment and select the
-reviewed provider preset explicitly:
+The deterministic adapter remains the offline default. To use a model provider,
+set `LLM_MODEL`, `LLM_BASE_URL`, `LLM_TIMEOUT_SECONDS`, `LLM_MAX_TOKENS`, and `LLM_API_KEY` in
+`.env`:
 
 ```powershell
-$env:DEEPSEEK_API_KEY = "<your-deepseek-api-key>"
 title-localization `
   --input data/examples/sample_title_case.json `
-  --config configs/title_selection.deepseek.json `
-  --output-dir artifacts/deepseek-example-run `
+  --config configs/title_selection.default.json `
+  --output-dir artifacts/provider-example-run `
   --adapter openai-compatible
 ```
 
-Do not put the key in configuration, source files, artifacts, or committed
-scripts. See the
-[DeepSeek setup guide](docs/two_stage_title_selection.md#使用-deepseek-api-key)
-for model selection, cleanup, and error behavior.
+Do not put the key in JSON configuration, source files, artifacts, or committed
+scripts. The provider fields are resolved from `.env`; explicit process
+environment variables take precedence.
 
 ## FastAPI Service
 
-Copy the environment template and configure at least one reviewed provider
-credential before starting the synchronous API locally:
+Copy the environment template and configure the provider credential before
+starting the synchronous API locally:
 
 ```powershell
 Copy-Item .env.example .env
@@ -147,13 +145,13 @@ uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 
 The service exposes `GET /`, `GET /healthz`, `GET /health`, `GET /readyz`,
 interactive OpenAPI documentation at `/docs`, and `POST /v1/title-localizations`.
-Every response includes `X-Request-ID`; pass that header to correlate logs. It accepts only the reviewed
-`default` and `deepseek` configuration profiles and always uses the server-side
-`openai-compatible` adapter. The API never returns deterministic synthetic
+Every response includes `X-Request-ID`; pass that header to correlate logs. It
+always uses the server-side OpenAI-compatible adapter configured through
+`LLM_*` environment variables. The API never returns deterministic synthetic
 titles or scores: a missing credential or unavailable provider returns a
 structured `502` error with no partial result. `GET /readyz` reports ready only
-when at least one reviewed provider profile has local configuration and a
-credential available. The first release is synchronous and is intended
+when its configured provider has local configuration and a credential
+available. The first release is synchronous and is intended
 for trusted local or protected deployments; it does not include authentication,
 rate limiting, batch jobs, or persisted API results.
 
@@ -180,7 +178,6 @@ $body = @{
     genre_zh = "系统玄幻"
     synopsis = "A cultivator gains a check-in system after being expelled from his sect."
   }
-  config_profile = "default"
 } | ConvertTo-Json -Depth 4
 
 Invoke-RestMethod `

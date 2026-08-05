@@ -17,12 +17,12 @@ logger = logging.getLogger(__name__)
 
 
 def build_localization_runner(settings: Settings) -> LocalizationRunner:
-    """Bind reviewed configuration profiles to an in-memory pipeline runner."""
+    """Bind the configured OpenAI-compatible provider to the pipeline runner."""
 
     def run_request(
         request: LocalizationRequest, run_context: RunLogContext | None = None
     ) -> InMemoryOutcome:
-        config: PipelineConfig = load_config(settings.config_profiles[request.config_profile])
+        config: PipelineConfig = load_config(settings.pipeline_config_path)
         try:
             validate_openai_compatible_availability(config.provider)
         except Exception as exc:

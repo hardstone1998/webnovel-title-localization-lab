@@ -4,11 +4,16 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
+import re
 import urllib.error
 import urllib.request
 from decimal import Decimal
 from typing import Any
+
+_logger = logging.getLogger(__name__)
+_DEEPSEEK_SCORING_MAX_TOKENS = 16000
 
 from ..config.pipeline_config import PipelineConfig
 from ..domain.contracts import DIMENSIONS
@@ -47,7 +52,7 @@ _DETERMINISTIC_TITLES = {
 def _provider_fields(provider_config: dict[str, Any]) -> tuple[str, str, str]:
     model_id = str(provider_config.get("model", "")).strip()
     base_url = str(provider_config.get("base_url", "")).rstrip("/")
-    api_key_env = str(provider_config.get("api_key_env", "TITLE_LOCALIZATION_API_KEY")).strip()
+    api_key_env = str(provider_config.get("api_key_env", "LLM_API_KEY")).strip()
     if not model_id or not base_url or not api_key_env:
         raise ProviderError(
             "供应商配置缺少 model、base_url 或 api_key_env。",
@@ -125,8 +130,92 @@ class OpenAICompatibleAdapter:
     def __init__(self, provider_config: dict[str, Any]) -> None:
         self.model_id, self.base_url, self.api_key_env = _provider_fields(provider_config)
         self.timeout_seconds = int(provider_config.get("timeout_seconds", 60))
+        configured_max_tokens = provider_config.get("max_tokens")
+        self.max_tokens = (
+            int(configured_max_tokens) if configured_max_tokens is not None else None
+        )
 
-    def _request_json(self, prompt: str) -> tuple[dict[str, Any], dict[str, Any]]:
+    @staticmethod
+    def _extract_json(content: str, response_id: str | None = None) -> dict[str, Any]:
+        """Parse the first valid JSON object from LLM output.
+
+        Handles: markdown code fences, leading/trailing text, BOM,
+        trailing commas, and other common LLM formatting quirks.
+        """
+        # Strip BOM and surrounding whitespace
+        text = content.lstrip("﻿").strip()
+
+        # 1. Direct parse — works when the model returns clean JSON
+        try:
+            value = json.loads(text)
+            if isinstance(value, dict):
+                return value
+        except json.JSONDecodeError:
+            pass
+
+        # 2. Strip markdown code fences (```json ... ``` or ``` ... ```)
+        stripped = re.sub(r"^```(?:json)?\s*\n?", "", text)
+        stripped = re.sub(r"\n?```\s*$", "", stripped).strip()
+        try:
+            value = json.loads(stripped)
+            if isinstance(value, dict):
+                return value
+        except json.JSONDecodeError:
+            pass
+
+        # 3. Extract content between the first { and the last }
+        start = text.find("{")
+        end = text.rfind("}")
+        if start != -1 and end > start:
+            fragment = text[start : end + 1]
+            try:
+                value = json.loads(fragment)
+                if isinstance(value, dict):
+                    return value
+            except json.JSONDecodeError:
+                # 4. Remove trailing commas before } or ] (common LLM artifact)
+                cleaned = re.sub(r",\s*([}\]])", r"\1", fragment)
+                try:
+                    value = json.loads(cleaned)
+                    if isinstance(value, dict):
+                        _logger.warning(
+                            "json_recovered_by_trailing_comma_removal "
+                            "response_id=%s original_len=%d",
+                            response_id,
+                            len(text),
+                        )
+                        return value
+                except json.JSONDecodeError:
+                    pass
+
+        # 5. Combine: code-fence strip + brace extraction + trailing comma fix
+        if start != -1 and end > start:
+            combined = re.sub(r",\s*([}\]])", r"\1", stripped[start : end + 1])
+            try:
+                value = json.loads(combined)
+                if isinstance(value, dict):
+                    _logger.warning(
+                        "json_recovered_by_combined_fix response_id=%s", response_id
+                    )
+                    return value
+            except json.JSONDecodeError:
+                pass
+
+        raise ProviderError(
+            "供应商响应内容无法解析为 JSON 对象。",
+            code="PROVIDER_RESPONSE_INVALID",
+            details={
+                "response_id": response_id,
+                "content_preview": text[:500] if len(text) > 500 else text,
+            },
+        )
+
+    def _request_json(
+        self,
+        prompt: str,
+        *,
+        max_tokens: int | None = None,
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
         api_key = os.environ.get(self.api_key_env)
         if not api_key:
             raise ProviderError(
@@ -139,6 +228,10 @@ class OpenAICompatibleAdapter:
             "messages": [{"role": "user", "content": prompt}],
             "response_format": {"type": "json_object"},
         }
+        if max_tokens is not None:
+            payload["max_tokens"] = max_tokens
+        if self.model_id.lower().startswith("deepseek-"):
+            payload["thinking"] = {"type": "disabled"}
         request = urllib.request.Request(
             f"{self.base_url}/chat/completions",
             data=json.dumps(payload).encode("utf-8"),
@@ -158,14 +251,61 @@ class OpenAICompatibleAdapter:
                 details={"error": str(exc), "base_url": self.base_url},
             ) from exc
         try:
-            content = envelope["choices"][0]["message"]["content"]
-            value = json.loads(content)
-        except (KeyError, IndexError, TypeError, json.JSONDecodeError) as exc:
+            choice = envelope["choices"][0]
+            message = choice["message"]
+            content = message["content"]
+        except (KeyError, IndexError, TypeError) as exc:
             raise ProviderError(
                 "供应商响应不包含有效的结构化内容。",
                 code="PROVIDER_RESPONSE_INVALID",
                 details={"response_id": envelope.get("id")},
             ) from exc
+        finish_reason = choice.get("finish_reason")
+        usage = envelope.get("usage")
+        reasoning_content = message.get("reasoning_content")
+        reasoning_content_present = isinstance(reasoning_content, str) and bool(
+            reasoning_content.strip()
+        )
+        content_is_string = isinstance(content, str)
+        content_empty = not content_is_string or not content.strip()
+        _logger.info(
+            "provider_completion_received response_id=%s model_id=%s finish_reason=%s "
+            "usage=%s reasoning_content_present=%s content_length=%s content_empty=%s",
+            envelope.get("id"),
+            self.model_id,
+            finish_reason,
+            usage,
+            reasoning_content_present,
+            len(content) if content_is_string else 0,
+            content_empty,
+        )
+        if not content_is_string:
+            raise ProviderError(
+                "供应商响应不包含字符串结构化内容。",
+                code="PROVIDER_RESPONSE_INVALID",
+                details={"response_id": envelope.get("id"), "finish_reason": finish_reason},
+            )
+        if content_empty:
+            raise ProviderError(
+                "供应商返回了空的结构化内容。",
+                code="PROVIDER_RESPONSE_EMPTY",
+                details={
+                    "response_id": envelope.get("id"),
+                    "finish_reason": finish_reason,
+                    "usage": usage,
+                },
+            )
+        if finish_reason == "length":
+            raise ProviderError(
+                "供应商响应因 token 上限被截断，JSON 不完整。",
+                code="PROVIDER_RESPONSE_TRUNCATED",
+                details={
+                    "response_id": envelope.get("id"),
+                    "usage": usage,
+                    "content_length": len(content),
+                },
+            )
+        value = self._extract_json(content, envelope.get("id"))
         if not isinstance(value, dict):
             raise ProviderError(
                 "供应商结构化内容的根节点必须是对象。",
@@ -193,20 +333,42 @@ class OpenAICompatibleAdapter:
         )
 
     def score(self, request: ScoringRequest) -> ScoringResponse:
-        value, metadata = self._request_json(request.prompt)
+        max_tokens = None
+        if self.model_id.lower().startswith("deepseek-"):
+            max_tokens = self.max_tokens or _DEEPSEEK_SCORING_MAX_TOKENS
+        value, metadata = self._request_json(request.prompt, max_tokens=max_tokens)
         raw_scores = value.get("scores")
         if not isinstance(raw_scores, list):
+            for alt_key in ("evaluations", "results", "candidates"):
+                alt = value.get(alt_key)
+                if isinstance(alt, list):
+                    raw_scores = alt
+                    break
+        if not isinstance(raw_scores, list):
+            top_keys = sorted(value.keys())
+            scores_type = type(raw_scores).__name__
+            sample = str(raw_scores)[:200] if raw_scores is not None else "null"
             raise ProviderError(
                 "评分响应缺少 scores 数组。",
                 code="PROVIDER_SCORING_SHAPE_INVALID",
+                details={
+                    "top_keys": top_keys,
+                    "scores_type": scores_type,
+                    "scores_sample": sample,
+                },
             )
         try:
             scores = tuple(self._parse_candidate_score(item) for item in raw_scores)
         except (KeyError, TypeError, ValueError) as exc:
+            first_item_keys = sorted(raw_scores[0].keys()) if raw_scores else []
             raise ProviderError(
                 "评分响应结构无效。",
                 code="PROVIDER_SCORING_SHAPE_INVALID",
-                details={"error": str(exc)},
+                details={
+                    "error": str(exc),
+                    "score_count": len(raw_scores),
+                    "first_item_keys": first_item_keys,
+                },
             ) from exc
         return ScoringResponse(
             scores=scores,

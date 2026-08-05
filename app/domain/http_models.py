@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -28,7 +28,6 @@ class LocalizationRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     source: SourceRecordRequest
-    config_profile: Literal["default", "deepseek"] = "default"
 
 
 class SelectedTitle(BaseModel):

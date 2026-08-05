@@ -24,11 +24,18 @@ from ..domain.contracts import (
     Violation,
     fingerprint,
 )
-from ..domain.errors import ScoringError, ValidationError
+from ..domain.errors import ProviderError, ScoringError, ValidationError
 from ..utils.logging import RunLogContext
 
 _TWO_PLACES = Decimal("0.01")
 _ALLOWED_SEVERITIES = {"critical", "major", "minor", "note"}
+_RECOVERABLE_PROVIDER_ERROR_CODES = {
+    "PROVIDER_REQUEST_FAILED",
+    "PROVIDER_RESPONSE_EMPTY",
+    "PROVIDER_RESPONSE_INVALID",
+    "PROVIDER_RESPONSE_TRUNCATED",
+    "PROVIDER_SCORING_SHAPE_INVALID",
+}
 logger = logging.getLogger(__name__)
 
 
@@ -128,7 +135,11 @@ def build_scoring_prompt(
         "每个候选必须给出八项整数得分、简短理由、按权重计算的贡献和总分。"
         "同时标记错误代码及 critical/major/minor/note 严重度。"
         "其中 SEMANTIC_MISMATCH、ENTITY_ERROR、GENRE_MISMATCH、HOOK_INVENTED "
-        "可构成严重违规。只返回结构化 JSON。"
+        "可构成严重违规。只返回结构化 JSON。\n"
+        'JSON 格式：{"scores":[{"candidate_id":"...","title":"...","dimensions":{'
+        '"dimension_name":{"score":int,"rationale":"...","weighted_contribution":number}},'
+        '"violations":[{"code":"...","severity":"...","rationale":"...","evidence_field":"..."}],'
+        '"weighted_total":number}]}'
     )
 
 
@@ -319,14 +330,39 @@ class TitleRanker:
             started_at = time.monotonic()
             try:
                 response = self.model.score(request)
+            except ProviderError as exc:
+                if (
+                    exc.code in _RECOVERABLE_PROVIDER_ERROR_CODES
+                    and attempt < self.config.max_attempts
+                ):
+                    logger.warning(
+                        "model_call_retry request_id=%s stage=scoring attempt=%s "
+                        "model_id=%s error_code=%s",
+                        self.run_context.correlation_id,
+                        attempt,
+                        model_id,
+                        exc.code,
+                    )
+                    continue
+                logger.error(
+                    "model_call_failed request_id=%s stage=scoring attempt=%s model_id=%s "
+                    "error_code=%s details=%s",
+                    self.run_context.correlation_id,
+                    attempt,
+                    model_id,
+                    exc.code,
+                    exc.details,
+                )
+                raise
             except Exception as exc:
                 logger.error(
                     "model_call_failed request_id=%s stage=scoring attempt=%s model_id=%s "
-                    "error_code=%s",
+                    "error_code=%s details=%s",
                     self.run_context.correlation_id,
                     attempt,
                     model_id,
                     getattr(exc, "code", "MODEL_CALL_FAILED"),
+                    getattr(exc, "details", None),
                 )
                 raise
             duration_ms = round((time.monotonic() - started_at) * 1000)
