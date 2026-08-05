@@ -3,6 +3,18 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class RunLogContext:
+    """Optional correlation data carried by a pipeline execution."""
+
+    request_id: str | None = None
+
+    @property
+    def correlation_id(self) -> str:
+        return self.request_id or "none"
 
 
 def configure_logging(level: str) -> None:

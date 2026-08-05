@@ -16,6 +16,7 @@ from ..utils.artifacts import (
     atomic_write_text,
     read_json,
 )
+from ..utils.logging import RunLogContext
 from ..validators.validation import validate_candidate_set, validate_ranking_result
 from .generation import CandidateGenerator
 from .reporting import render_markdown_report
@@ -48,8 +49,11 @@ def _generate_candidate_set(
     source: SourceRecord,
     config: PipelineConfig,
     model_adapter: Any,
+    run_context: RunLogContext | None = None,
 ) -> CandidateSet:
-    candidate_set = CandidateGenerator(model_adapter, config.generation).generate(source)
+    candidate_set = CandidateGenerator(
+        model_adapter, config.generation, run_context=run_context
+    ).generate(source)
     validate_candidate_set(candidate_set)
     return candidate_set
 
@@ -60,8 +64,9 @@ def _rank_candidate_set(
     candidate_fingerprint: str,
     config: PipelineConfig,
     model_adapter: Any,
+    run_context: RunLogContext | None = None,
 ) -> RankingResult:
-    ranking = TitleRanker(model_adapter, config.scoring).rank(
+    ranking = TitleRanker(model_adapter, config.scoring, run_context=run_context).rank(
         source,
         candidate_set,
         candidate_fingerprint,
@@ -75,16 +80,18 @@ def run_pipeline_for_source(
     config: PipelineConfig,
     *,
     model_adapter: Any,
+    run_context: RunLogContext | None = None,
 ) -> InMemoryOutcome:
     """Execute the two-stage pipeline without reading or writing artifacts."""
 
-    candidate_set = _generate_candidate_set(source, config, model_adapter)
+    candidate_set = _generate_candidate_set(source, config, model_adapter, run_context)
     ranking = _rank_candidate_set(
         source,
         candidate_set,
         fingerprint(candidate_set.to_dict()),
         config,
         model_adapter,
+        run_context,
     )
     return InMemoryOutcome(
         candidate_set=candidate_set,

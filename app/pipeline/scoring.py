@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import logging
 import random
+import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
@@ -23,9 +25,11 @@ from ..domain.contracts import (
     fingerprint,
 )
 from ..domain.errors import ScoringError, ValidationError
+from ..utils.logging import RunLogContext
 
 _TWO_PLACES = Decimal("0.01")
 _ALLOWED_SEVERITIES = {"critical", "major", "minor", "note"}
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -276,9 +280,16 @@ def _ranking_key(item: CandidateScore) -> tuple[Any, ...]:
 
 
 class TitleRanker:
-    def __init__(self, model: ScoringModel, config: ScoringConfig) -> None:
+    def __init__(
+        self,
+        model: ScoringModel,
+        config: ScoringConfig,
+        *,
+        run_context: RunLogContext | None = None,
+    ) -> None:
         self.model = model
         self.config = config
+        self.run_context = run_context or RunLogContext()
 
     def rank(
         self,
@@ -298,11 +309,38 @@ class TitleRanker:
         response: ScoringResponse | None = None
         attempt = 0
         for attempt in range(1, self.config.max_attempts + 1):
-            response = self.model.score(request)
+            model_id = str(getattr(self.model, "model_id", "unknown"))
+            logger.info(
+                "model_call_started request_id=%s stage=scoring attempt=%s model_id=%s",
+                self.run_context.correlation_id,
+                attempt,
+                model_id,
+            )
+            started_at = time.monotonic()
+            try:
+                response = self.model.score(request)
+            except Exception as exc:
+                logger.error(
+                    "model_call_failed request_id=%s stage=scoring attempt=%s model_id=%s "
+                    "error_code=%s",
+                    self.run_context.correlation_id,
+                    attempt,
+                    model_id,
+                    getattr(exc, "code", "MODEL_CALL_FAILED"),
+                )
+                raise
+            duration_ms = round((time.monotonic() - started_at) * 1000)
             try:
                 _validate_response(response, permutation)
                 break
             except ValidationError as exc:
+                logger.warning(
+                    "model_response_rejected request_id=%s stage=scoring attempt=%s "
+                    "error_code=%s",
+                    self.run_context.correlation_id,
+                    attempt,
+                    exc.code,
+                )
                 last_error = exc
                 response = None
         if response is None:
@@ -318,6 +356,18 @@ class TitleRanker:
         scores = tuple(
             _authoritative_candidate_score(model_score, self.config.weights)
             for model_score in response.scores
+        )
+        logger.info(
+            "model_call_completed request_id=%s stage=scoring attempt=%s model_id=%s "
+            "duration_ms=%s scores=%r",
+            self.run_context.correlation_id,
+            attempt,
+            response.model_id,
+            duration_ms,
+            [
+                (item.candidate_id, str(item.authoritative_total), item.eligible)
+                for item in scores
+            ],
         )
         ordered = tuple(sorted(scores, key=_ranking_key))
         winner = next((item for item in ordered if item.eligible), None)

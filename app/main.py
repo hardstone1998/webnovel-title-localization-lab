@@ -19,7 +19,7 @@ from .domain.errors import LabError, ProviderError
 from .domain.http_models import LocalizationRequest
 from .pipeline.orchestration import InMemoryOutcome
 from .pipeline.service import build_localization_runner
-from .utils.logging import configure_logging
+from .utils.logging import RunLogContext, configure_logging
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ def _request_id(request: Request) -> str:
 
 
 def create_app(
-    run_request: Callable[[LocalizationRequest], InMemoryOutcome] | None = None,
+    run_request: Callable[[LocalizationRequest, RunLogContext | None], InMemoryOutcome] | None = None,
     settings: Settings | None = None,
 ) -> FastAPI:
     """Create a configured API app; injectable dependencies keep HTTP tests isolated."""

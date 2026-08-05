@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from .contracts import SourceRecord
 
@@ -25,12 +25,18 @@ class SourceRecordRequest(BaseModel):
 
 
 class LocalizationRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     source: SourceRecordRequest
     config_profile: Literal["default", "deepseek"] = "default"
-    adapter: Literal["deterministic", "openai-compatible"] = "deterministic"
+
+
+class SelectedTitle(BaseModel):
+    candidate_id: str
+    title: str
+    score: float
 
 
 class LocalizationResponse(BaseModel):
-    candidate_set: dict[str, Any]
-    ranking_result: dict[str, Any]
-    report: str
+    selected: SelectedTitle
+    unselected_titles: list[str]

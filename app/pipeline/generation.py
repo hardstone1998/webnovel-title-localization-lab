@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
+import time
 import unicodedata
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -21,9 +23,11 @@ from ..domain.contracts import (
     fingerprint,
 )
 from ..domain.errors import GenerationError
+from ..utils.logging import RunLogContext
 
 _CJK_PATTERN = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]")
 _ASCII_LETTER_PATTERN = re.compile(r"[A-Za-z]")
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -115,9 +119,16 @@ def build_generation_prompt(
 
 
 class CandidateGenerator:
-    def __init__(self, model: GenerationModel, config: GenerationConfig) -> None:
+    def __init__(
+        self,
+        model: GenerationModel,
+        config: GenerationConfig,
+        *,
+        run_context: RunLogContext | None = None,
+    ) -> None:
         self.model = model
         self.config = config
+        self.run_context = run_context or RunLogContext()
 
     def generate(self, source: SourceRecord) -> CandidateSet:
         candidates: list[Candidate] = []
@@ -145,7 +156,40 @@ class CandidateGenerator:
                     context=context,
                     excluded_titles=excluded,
                 )
-                response = self.model.generate(request)
+                model_id = str(getattr(self.model, "model_id", "unknown"))
+                logger.info(
+                    "model_call_started request_id=%s stage=generation strategy=%s "
+                    "attempt=%s model_id=%s",
+                    self.run_context.correlation_id,
+                    strategy,
+                    attempt,
+                    model_id,
+                )
+                started_at = time.monotonic()
+                try:
+                    response = self.model.generate(request)
+                except Exception as exc:
+                    logger.error(
+                        "model_call_failed request_id=%s stage=generation strategy=%s "
+                        "attempt=%s model_id=%s error_code=%s",
+                        self.run_context.correlation_id,
+                        strategy,
+                        attempt,
+                        model_id,
+                        getattr(exc, "code", "MODEL_CALL_FAILED"),
+                    )
+                    raise
+                duration_ms = round((time.monotonic() - started_at) * 1000)
+                logger.info(
+                    "model_call_completed request_id=%s stage=generation strategy=%s "
+                    "attempt=%s model_id=%s duration_ms=%s titles=%r",
+                    self.run_context.correlation_id,
+                    strategy,
+                    attempt,
+                    response.model_id,
+                    duration_ms,
+                    list(response.titles),
+                )
                 if len(response.titles) > needed:
                     raise GenerationError(
                         "生成模型返回的候选数量超过请求数量。",
@@ -183,6 +227,14 @@ class CandidateGenerator:
                     seen.add(key)
                     if len(strategy_candidates) == 4:
                         break
+                if len(strategy_candidates) < 4 and attempt < self.config.max_attempts:
+                    logger.warning(
+                        "model_response_rejected request_id=%s stage=generation strategy=%s "
+                        "attempt=%s error_code=GENERATION_RESPONSE_INSUFFICIENT",
+                        self.run_context.correlation_id,
+                        strategy,
+                        attempt,
+                    )
             attempts[strategy] = attempt
             if len(strategy_candidates) != 4:
                 raise GenerationError(

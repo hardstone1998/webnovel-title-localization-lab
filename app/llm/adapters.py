@@ -44,6 +44,30 @@ _DETERMINISTIC_TITLES = {
 }
 
 
+def _provider_fields(provider_config: dict[str, Any]) -> tuple[str, str, str]:
+    model_id = str(provider_config.get("model", "")).strip()
+    base_url = str(provider_config.get("base_url", "")).rstrip("/")
+    api_key_env = str(provider_config.get("api_key_env", "TITLE_LOCALIZATION_API_KEY")).strip()
+    if not model_id or not base_url or not api_key_env:
+        raise ProviderError(
+            "供应商配置缺少 model、base_url 或 api_key_env。",
+            code="INVALID_PROVIDER_CONFIGURATION",
+        )
+    return model_id, base_url, api_key_env
+
+
+def validate_openai_compatible_availability(provider_config: dict[str, Any]) -> None:
+    """Validate local provider prerequisites without sending a network request."""
+
+    _, _, api_key_env = _provider_fields(provider_config)
+    if not os.environ.get(api_key_env, "").strip():
+        raise ProviderError(
+            f"环境变量 {api_key_env} 未设置。",
+            code="PROVIDER_CREDENTIAL_MISSING",
+            details={"environment_variable": api_key_env},
+        )
+
+
 class DeterministicAdapter:
     """Offline adapter with stable synthetic outputs."""
 
@@ -99,15 +123,8 @@ class OpenAICompatibleAdapter:
     """Minimal JSON-output adapter for an explicitly configured compatible endpoint."""
 
     def __init__(self, provider_config: dict[str, Any]) -> None:
-        self.model_id = str(provider_config.get("model", "")).strip()
-        self.base_url = str(provider_config.get("base_url", "")).rstrip("/")
-        self.api_key_env = str(provider_config.get("api_key_env", "TITLE_LOCALIZATION_API_KEY"))
+        self.model_id, self.base_url, self.api_key_env = _provider_fields(provider_config)
         self.timeout_seconds = int(provider_config.get("timeout_seconds", 60))
-        if not self.model_id or not self.base_url:
-            raise ProviderError(
-                "供应商配置缺少 model 或 base_url。",
-                code="INVALID_PROVIDER_CONFIGURATION",
-            )
 
     def _request_json(self, prompt: str) -> tuple[dict[str, Any], dict[str, Any]]:
         api_key = os.environ.get(self.api_key_env)

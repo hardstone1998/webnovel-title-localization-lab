@@ -64,8 +64,8 @@ python -m app `
 uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-服务提供 `GET /healthz`、`GET /docs` 和 `POST /v1/title-localizations`。
-请求中的 `source` 必须包含本节输入要求的全部字段，包括 `genre_zh`；该字段会同时传递给生成与评分阶段的模型提示。`config_profile` 仅支持 `default` 或 `deepseek`，`adapter` 仅支持 `deterministic` 或 `openai-compatible`。
+服务提供 `GET /healthz`、`GET /readyz`、`GET /docs` 和 `POST /v1/title-localizations`。
+请求中的 `source` 必须包含本节输入要求的全部字段，包括 `genre_zh`；该字段会同时传递给生成与评分阶段的模型提示。`config_profile` 仅支持 `default` 或 `deepseek`，API 固定使用服务端受控的 `openai-compatible` 模型，不能传入 `adapter`。至少一个受控 profile 配置了有效模型和凭证时，`/readyz` 才返回就绪；该检查不会调用远端模型。
 
 ```powershell
 $body = @{
@@ -79,7 +79,6 @@ $body = @{
     synopsis = "A cultivator gains a check-in system after being expelled from his sect."
   }
   config_profile = "default"
-  adapter = "deterministic"
 } | ConvertTo-Json -Depth 4
 
 Invoke-RestMethod `
@@ -89,7 +88,20 @@ Invoke-RestMethod `
   -Body $body
 ```
 
-该接口会同步等待模型完成并直接返回候选集、排名结果和 Markdown 报告，不创建 API 专用制品目录。首版没有认证、限流、批量任务或持久化结果；请仅在受信网络或受保护的部署环境中使用。
+该接口会同步等待真实模型完成，不创建 API 专用制品目录。成功时仅返回最终选择、应用程序复算的权威总分和其余候选剧名：
+
+```json
+{
+  "selected": {
+    "candidate_id": "cand_...",
+    "title": "Every Check-In Makes Me Stronger",
+    "score": 87.5
+  },
+  "unselected_titles": ["...", "..."]
+}
+```
+
+响应不再包含 `candidate_set`、`ranking_result` 或 Markdown `report`。模型配置、凭证或上游调用不可用时，接口返回 HTTP 502 的结构化错误而不输出兜底候选或评分；若全部候选都不合格，则返回 `NO_ELIGIBLE_WINNER` 的 HTTP 422 错误。每次生成、评分和最终选择都会输出含 `X-Request-ID` 的 INFO 日志摘要；日志不会写入 API Key、Authorization header、完整提示词、简介或评分理由。首版没有认证、限流、批量任务或持久化结果；请仅在受信网络或受保护的部署环境中使用。
 
 ## 八个评分维度
 

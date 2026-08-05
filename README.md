@@ -137,8 +137,8 @@ for model selection, cleanup, and error behavior.
 
 ## FastAPI Service
 
-Copy the environment template when configuring a provider (the deterministic
-adapter does not require a key), then start the synchronous API locally:
+Copy the environment template and configure at least one reviewed provider
+credential before starting the synchronous API locally:
 
 ```powershell
 Copy-Item .env.example .env
@@ -148,8 +148,12 @@ uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 The service exposes `GET /`, `GET /healthz`, `GET /health`, `GET /readyz`,
 interactive OpenAPI documentation at `/docs`, and `POST /v1/title-localizations`.
 Every response includes `X-Request-ID`; pass that header to correlate logs. It accepts only the reviewed
-`default` and `deepseek` configuration profiles, and the `deterministic` and
-`openai-compatible` adapters. The first release is synchronous and is intended
+`default` and `deepseek` configuration profiles and always uses the server-side
+`openai-compatible` adapter. The API never returns deterministic synthetic
+titles or scores: a missing credential or unavailable provider returns a
+structured `502` error with no partial result. `GET /readyz` reports ready only
+when at least one reviewed provider profile has local configuration and a
+credential available. The first release is synchronous and is intended
 for trusted local or protected deployments; it does not include authentication,
 rate limiting, batch jobs, or persisted API results.
 
@@ -163,7 +167,7 @@ The API listens on port `8000` by default; set `HOST_PORT` in `.env` to change
 the host-side port. The image runs a single API process and has no Redis, worker,
 database, or persistent result volume.
 
-Example deterministic request:
+Example model-backed request:
 
 ```powershell
 $body = @{
@@ -177,7 +181,6 @@ $body = @{
     synopsis = "A cultivator gains a check-in system after being expelled from his sect."
   }
   config_profile = "default"
-  adapter = "deterministic"
 } | ConvertTo-Json -Depth 4
 
 Invoke-RestMethod `
@@ -186,6 +189,24 @@ Invoke-RestMethod `
   -ContentType "application/json" `
   -Body $body
 ```
+
+On success, the API returns only the selected title and authoritative score,
+plus the remaining titles in final rank order:
+
+```json
+{
+  "selected": {
+    "candidate_id": "cand_...",
+    "title": "Every Check-In Makes Me Stronger",
+    "score": 87.5
+  },
+  "unselected_titles": ["...", "..."]
+}
+```
+
+It does not return `candidate_set`, `ranking_result`, or `report`. Model calls
+emit request-correlated INFO logs; these include stage summaries but never API
+keys, authorization headers, raw prompts, source synopses, or score rationales.
 
 ## Current Status
 

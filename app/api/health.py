@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 
 from ..config.pipeline_config import load_config
 from ..domain.errors import LabError
+from ..llm.adapters import validate_openai_compatible_availability
 
 router = APIRouter(tags=["health"])
 
@@ -21,11 +22,14 @@ def healthz() -> dict[str, str]:
 
 @router.get("/readyz")
 def readyz(request: Request):
-    """Confirm that the default reviewed pipeline configuration can be loaded."""
+    """Confirm that at least one reviewed model profile is locally usable."""
 
     settings = request.app.state.settings
-    try:
-        load_config(settings.default_config_path)
-    except LabError:
-        return JSONResponse(status_code=503, content={"status": "not_ready"})
-    return {"status": "ready"}
+    for config_path in settings.config_profiles.values():
+        try:
+            config = load_config(config_path)
+            validate_openai_compatible_availability(config.provider)
+        except LabError:
+            continue
+        return {"status": "ready"}
+    return JSONResponse(status_code=503, content={"status": "not_ready"})
