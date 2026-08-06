@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import logging
 import random
 import time
@@ -25,6 +24,7 @@ from ..domain.contracts import (
     fingerprint,
 )
 from ..domain.errors import ProviderError, ScoringError, ValidationError
+from ..prompts.templates import build_scoring_prompt as _build_scoring_prompt
 from ..utils.logging import RunLogContext
 
 _TWO_PLACES = Decimal("0.01")
@@ -125,22 +125,9 @@ def build_scoring_prompt(
         "target_language": source.target_language,
     }
     candidate_payload = [
-        {"candidate_id": candidate_id, "title": title} for candidate_id, title in candidates
+        {"candidate_id": cid, "title": title} for cid, title in candidates
     ]
-    return (
-        "你是英文剧名评审。独立评估全部候选，不得增加、删除、改写剧名，也不得推断生成策略。\n"
-        f"源内容：{json.dumps(source_context, ensure_ascii=False, sort_keys=True)}\n"
-        f"评分标准：{json.dumps(rubric, ensure_ascii=False, sort_keys=True)}\n"
-        f"候选：{json.dumps(candidate_payload, ensure_ascii=False)}\n"
-        "每个候选必须给出八项整数得分、简短理由、按权重计算的贡献和总分。"
-        "同时标记错误代码及 critical/major/minor/note 严重度。"
-        "其中 SEMANTIC_MISMATCH、ENTITY_ERROR、GENRE_MISMATCH、HOOK_INVENTED "
-        "可构成严重违规。只返回结构化 JSON。\n"
-        'JSON 格式：{"scores":[{"candidate_id":"...","title":"...","dimensions":{'
-        '"dimension_name":{"score":int,"rationale":"...","weighted_contribution":number}},'
-        '"violations":[{"code":"...","severity":"...","rationale":"...","evidence_field":"..."}],'
-        '"weighted_total":number}]}'
-    )
+    return _build_scoring_prompt(source_context, rubric, candidate_payload)
 
 
 def _validate_model_score(

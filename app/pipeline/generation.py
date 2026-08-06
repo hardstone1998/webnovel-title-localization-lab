@@ -23,6 +23,7 @@ from ..domain.contracts import (
     fingerprint,
 )
 from ..domain.errors import GenerationError
+from ..prompts.templates import build_generation_prompt as _build_generation_prompt
 from ..utils.logging import RunLogContext
 
 _CJK_PATTERN = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]")
@@ -104,17 +105,7 @@ def build_generation_prompt(
     excluded_titles: tuple[str, ...] = (),
 ) -> tuple[str, dict[str, Any]]:
     context = generation_context(source, strategy, config)
-    strategy_instruction = {
-        "source_title": "仅改编中文原始剧名的核心概念，不得从故事简介虚构卖点。",
-        "synopsis": "根据故事简介中的前提、冲突、主角或卖点创作英文剧名。",
-        "market_localized": "结合全部上下文，创作符合目标英语市场习惯的本土化剧名。",
-    }[strategy]
-    prompt = (
-        f"生成 {count} 个互不重复、非空且自然的英文剧名。{strategy_instruction}\n"
-        f"上下文：{json.dumps(context, ensure_ascii=False, sort_keys=True)}\n"
-        f"不得使用：{json.dumps(excluded_titles, ensure_ascii=False)}\n"
-        '只返回 JSON：{"titles":["..."]}。不得评分或选择胜出者。'
-    )
+    prompt = _build_generation_prompt(strategy, count, context, excluded_titles)
     return prompt, context
 
 
