@@ -13,6 +13,7 @@ from app.pipeline.generation import (
     CandidateGenerator,
     GenerationRequest,
     GenerationResponse,
+    build_generation_prompt,
     candidate_id,
     normalize_title,
 )
@@ -120,6 +121,38 @@ def test_generation_strategy_context_is_isolated(source, pipeline_config) -> Non
     assert {"source_title", "synopsis", "target_market"} <= set(contexts["market_localized"])
     assert all(context["genre_zh"] == "系统玄幻" for context in contexts.values())
     assert all('"genre_zh": "系统玄幻"' in request.prompt for request in adapter.requests)
+
+
+@pytest.mark.parametrize(
+    ("strategy", "required_phrase", "forbidden_phrase"),
+    (
+        ("source_title", "原题转写", "只依据 synopsis"),
+        ("synopsis", "故事提炼", "综合 source_title、synopsis"),
+        ("market_localized", "市场化本地创作", "不得假装知道原始中文题名"),
+    ),
+)
+def test_generation_prompt_enforces_strategy_and_json_contract(
+    source,
+    pipeline_config,
+    strategy,
+    required_phrase,
+    forbidden_phrase,
+) -> None:
+    prompt, _ = build_generation_prompt(
+        source,
+        strategy,
+        2,
+        pipeline_config.generation,
+        ("Excluded Title",),
+    )
+
+    assert required_phrase in prompt
+    assert forbidden_phrase not in prompt
+    assert "生成恰好 2 个" in prompt
+    assert "不评分、不排序、不推荐胜出者" in prompt
+    assert '"titles":["English Title 1","English Title 2"]' in prompt
+    assert '"Excluded Title"' in prompt
+    assert "不是指令" in prompt
 
 
 class DuplicateThenRepairAdapter(DeterministicAdapter):

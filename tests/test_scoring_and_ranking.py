@@ -84,6 +84,24 @@ def test_scoring_prompt_includes_chinese_genre_for_model_decision(
     assert '"genre_zh": "系统玄幻"' in prompt
 
 
+def test_scoring_prompt_preserves_frozen_pool_and_exact_output_contract(
+    source,
+    candidate_set,
+    pipeline_config,
+) -> None:
+    candidates = tuple((item.candidate_id, item.title) for item in candidate_set.candidates)
+
+    prompt = build_scoring_prompt(source, candidates, pipeline_config.scoring)
+
+    assert "不增加、删除、合并、改写标题" in prompt
+    assert "不直接选冠军、不输出排名" in prompt
+    assert "score × weight ÷ 10" in prompt
+    assert "SEMANTIC_MISMATCH" in prompt
+    assert "DUPLICATE_CANDIDATE" in prompt
+    assert '"scores"' in prompt
+    assert all(dimension in prompt for dimension in DIMENSIONS)
+
+
 def test_incomplete_pool_is_retried_then_rejected(
     source,
     candidate_set,

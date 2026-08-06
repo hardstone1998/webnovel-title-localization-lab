@@ -3,9 +3,9 @@
   "generation": {
     "max_attempts": 3,
     "prompt_versions": {
-      "source_title": "source-title-v1",
-      "synopsis": "synopsis-v1",
-      "market_localized": "market-localized-v1"
+      "source_title": "source-title-v2",
+      "synopsis": "synopsis-v2",
+      "market_localized": "market-localized-v2"
     },
     "parameters": {
       "temperature": 0.7
@@ -17,7 +17,7 @@
     "max_attempts": 2,
     "rubric_version": "title-rubric-v1",
     "weight_version": "default-weights-v1",
-    "prompt_version": "eight-dimension-score-v1",
+    "prompt_version": "eight-dimension-score-v2",
     "permutation_seed": 20260729,
     "weights": {
       "semantic_fidelity": 20,
