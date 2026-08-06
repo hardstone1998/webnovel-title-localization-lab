@@ -178,6 +178,7 @@ $body = @{
     genre_zh = "系统玄幻"
     synopsis = "A cultivator gains a check-in system after being expelled from his sect."
   }
+  debug = $true # Optional: return per-candidate scores.
 } | ConvertTo-Json -Depth 4
 
 Invoke-RestMethod `
@@ -187,8 +188,8 @@ Invoke-RestMethod `
   -Body $body
 ```
 
-On success, the API returns only the selected title and authoritative score,
-plus the remaining titles in final rank order:
+On success, the API returns the selected title and detailed scores for every
+candidate in final rank order:
 
 ```json
 {
@@ -197,13 +198,25 @@ plus the remaining titles in final rank order:
     "title": "Every Check-In Makes Me Stronger",
     "score": 87.5
   },
-  "unselected_titles": ["...", "..."]
+  "ranked_titles": [
+    {
+      "rank": 1,
+      "candidate_id": "cand_...",
+      "title": "Every Check-In Makes Me Stronger",
+      "dimensions": {"semantic_fidelity": 9, "natural_english": 8},
+      "total_score": 87.5
+    }
+  ]
 }
 ```
 
 It does not return `candidate_set`, `ranking_result`, or `report`. Model calls
 emit request-correlated INFO logs; these include stage summaries but never API
 keys, authorization headers, raw prompts, source synopses, or score rationales.
+
+The optional request field `debug` remains supported and returns the same
+per-candidate data under a `debug` field for callers using the earlier debug
+contract.
 
 ## Current Status
 

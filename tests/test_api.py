@@ -5,6 +5,7 @@ import logging
 from dataclasses import replace
 
 from app.config.pipeline_config import load_config
+from app.domain.contracts import DIMENSIONS
 from app.domain.errors import ProviderError
 from app.llm.adapters import DeterministicAdapter
 from app.main import create_app
@@ -94,7 +95,7 @@ def test_service_routes_report_metadata_and_request_id() -> None:
     assert health_response.json() == {"status": "ok"}
 
 
-def test_localization_api_returns_compact_model_result(project_root, caplog) -> None:
+def test_localization_api_returns_detailed_ranked_result(project_root, caplog) -> None:
     caplog.set_level(logging.INFO)
     response = TestClient(create_app(run_request=_runner(project_root))).post(
         "/v1/title-localizations",
@@ -104,10 +105,21 @@ def test_localization_api_returns_compact_model_result(project_root, caplog) -> 
 
     body = response.json()
     assert response.status_code == 200
-    assert set(body) == {"selected", "unselected_titles"}
+    assert set(body) == {"selected", "ranked_titles"}
     assert set(body["selected"]) == {"candidate_id", "title", "score"}
     assert isinstance(body["selected"]["score"], float)
-    assert len(body["unselected_titles"]) == 11
+    assert len(body["ranked_titles"]) == 12
+    assert body["ranked_titles"][0]["candidate_id"] == body["selected"]["candidate_id"]
+    assert body["ranked_titles"][0]["rank"] == 1
+    assert body["ranked_titles"][0]["total_score"] == body["selected"]["score"]
+    assert all(
+        set(item["dimensions"]) == set(DIMENSIONS) for item in body["ranked_titles"]
+    )
+    assert all(
+        isinstance(score, int)
+        for item in body["ranked_titles"]
+        for score in item["dimensions"].values()
+    )
     assert "candidate_set" not in body
     assert "ranking_result" not in body
     assert "report" not in body
@@ -122,6 +134,20 @@ def test_localization_api_returns_compact_model_result(project_root, caplog) -> 
     assert "LLM_API_KEY" not in messages
     assert "Authorization" not in messages
     assert _request_payload(project_root)["source"]["synopsis"] not in messages
+
+
+def test_localization_api_includes_dimension_scores_when_debug_is_enabled(project_root) -> None:
+    payload = _request_payload(project_root)
+    payload["debug"] = True
+
+    response = TestClient(create_app(run_request=_runner(project_root))).post(
+        "/v1/title-localizations", json=payload
+    )
+
+    body = response.json()
+    assert response.status_code == 200
+    assert len(body["debug"]) == 12
+    assert body["debug"] == body["ranked_titles"]
 
 
 def test_localization_api_rejects_adapter_and_unknown_fields(project_root) -> None:

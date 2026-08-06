@@ -28,6 +28,7 @@ class LocalizationRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     source: SourceRecordRequest
+    debug: bool = False
 
 
 class SelectedTitle(BaseModel):
@@ -36,6 +37,17 @@ class SelectedTitle(BaseModel):
     score: float
 
 
+class RankedTitleScore(BaseModel):
+    """A candidate title and its authoritative scoring result."""
+
+    rank: int
+    candidate_id: str
+    title: str
+    dimensions: dict[str, int]
+    total_score: float
+
+
 class LocalizationResponse(BaseModel):
     selected: SelectedTitle
-    unselected_titles: list[str]
+    ranked_titles: list[RankedTitleScore]
+    debug: list[RankedTitleScore] | None = None
