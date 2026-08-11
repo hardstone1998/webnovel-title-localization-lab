@@ -6,6 +6,11 @@ The architecture supports controlled research and a synchronous protected Web
 API. Its main job is to keep data, candidate generation, ranking, and evaluation
 independently replaceable and reproducible.
 
+The decision architecture separates **Faithfulness / Validity** from
+**Platform Preference**. Validity checks enforce basic content constraints;
+preference ranking operates only among candidates that remain eligible. A high
+platform-fit or appeal score must never cancel a material factual violation.
+
 ## Logical Flow
 
 ```text
@@ -18,17 +23,55 @@ Validation and Provenance
 Candidate Generation --------> Candidate Artifact
       |                              |
       v                              v
-Hard Constraints              Ranker Comparison
-                                     |
-                                     v
-                              Frozen Evaluation
-                                     |
-                                     v
-                            Metrics and Error Report
+Validity Filtering            Platform Preference Ranking
+       |                              |
+       +------------------------------+
+                                      |
+                                      v
+                                     Top-K
+                                      |
+                    +-----------------+-----------------+
+                    |                                   |
+                    v                                   v
+          Development Evaluation              Frozen Test Evaluation
+                    |                                   |
+                    v                                   v
+             Failure Mining                    Final Report Only
+                    |
+                    v
+      Hard Negatives and Preference Data
+                    |
+                    v
+             Reward Model Update
 ```
 
 Candidate artifacts are the central boundary. Generators produce them, rankers
 consume them, and evaluators compare rankers over the same candidate pool.
+
+The Frozen Test branch is deliberately terminal: its samples, labels, and
+failures do not enter prompt revision, model training, hard-negative mining,
+model selection, or threshold tuning.
+
+## Data Flywheel
+
+The project models a repeatable localization feedback loop rather than a single
+training run:
+
+```text
+historical platform data
+  -> candidate generation
+  -> automated evaluation and weak-supervision ranking
+  -> development-set failure-case mining
+  -> hard-negative construction
+  -> preference-dataset updates
+  -> Reward Model updates
+  -> new inference version
+  -> new development failures
+```
+
+The accumulated assets are the versioned candidates, failure cases, preference
+pairs, labels, and evaluation artifacts. Frozen-test failures are excluded from
+the loop so that the final comparison remains an estimate of generalization.
 
 ## Layer Responsibilities
 
@@ -107,18 +150,18 @@ files or run reports.
 
 ## Architecture Gates
 
-Before V0 implementation begins:
+Before V0 is declared reproducible:
 
 - source and candidate schema responsibilities are agreed
 - frozen-set policy and rubric versioning are documented
 - one experiment manifest shape is selected
 - hard constraints are separated from preference dimensions
 
-Before a learned ranker begins:
+Before V3 Reward Model training begins:
 
-- V0 and V1 artifacts are reproducible
+- V0, V1, and V2 artifacts are reproducible
 - candidate pools are versioned and fixed for comparison
-- evaluation reliability and human disagreement are measured
+- the chosen preference protocol has a reliability report
 - leakage checks are part of dataset preparation
 
 ## Non-Goals

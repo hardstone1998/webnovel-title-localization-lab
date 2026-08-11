@@ -39,6 +39,23 @@ rather than infer missing story facts.
 Each annotation records the error code, severity, short rationale, evidence field
 from the source record, rubric version, and reviewer class.
 
+## Annotator Scope
+
+Project developers may annotate errors that can be checked against the source
+record: semantic drift, unsupported genre or abilities, character identity and
+relationship errors, plot inconsistency, excessive clickbait, spoilers, generic
+titles, and candidate duplication. Duplicate detection should also be automated
+where normalization makes it deterministic.
+
+Developer labels are validity and diagnostic evidence. Because project
+developers are not assumed to represent the target English readership, their
+personal appeal judgments must not be promoted to ground truth for commercial
+attractiveness or reader preference.
+
+Independent English readers should be used for blind preference evaluation when
+available. Their candidate order is randomized, and generator identity, ranker
+output, Platform Anchor, and other reviewers' decisions remain hidden.
+
 ## Reporting
 
 Reports should show candidate-level and sample-level error rates, co-occurring

@@ -4,11 +4,24 @@ A reproducible research lab and synchronous Web API for generating and ranking
 English titles for Chinese web novels. It is evaluation-first and deployable as
 a small protected service, not a reader-facing translation platform.
 
+## Research Positioning
+
+- The project learns and reproduces the English title preferences observed on
+  WebNovel and similar overseas web-novel platforms.
+- Platform-published titles are treated as **Platform Anchors / Weak Labels**,
+  not absolute ground truth or uniquely optimal translations.
+- The evaluation protocol reserves a separate 100-record **Frozen Test Set**
+  that is excluded from prompt and rule design, model training, model and
+  checkpoint selection, scoring-weight changes, and threshold tuning.
+- The long-term research loop is **candidate generation -> evaluation ->
+  failure mining -> preference data -> Reward Model updates**. Failures from the
+  Frozen Test Set are report-only and never enter this feedback loop.
+
 ## Research Question
 
-Can a task-specific ranker, trained with weak platform signals and a small amount
-of human preference data, rank title candidates more reliably than a rule-based
-baseline or a general-purpose LLM judge?
+Can platform history, weak preference data, hard negatives, and a small amount
+of human feedback support a reproducible system that generates faithful titles
+and ranks them according to the target platform's established naming patterns?
 
 Title quality is treated as a multi-objective decision:
 
@@ -17,6 +30,26 @@ Title quality is treated as a multi-objective decision:
 - genre and platform fit
 - reader appeal
 - low risk of clickbait, spoilers, or invented facts
+
+## Decision Framework
+
+The task is split into two related but independently inspectable objectives:
+
+1. **Faithfulness / Validity** acts as a hard constraint or risk filter. It
+   checks semantic drift, character and relationship errors, unsupported genre
+   or ability claims, spoilers, excessive clickbait, and titles so generic that
+   they lose the work's central hook.
+2. **Platform Preference** ranks candidates that pass the validity checks by how
+   closely they match the target platform's observed English naming patterns.
+
+The resulting decision path is:
+
+```text
+Candidate Generation -> Validity Filtering -> Platform Preference Ranking -> Top-K
+```
+
+This separation prevents a high style or appeal score from hiding a material
+content error.
 
 ## Scope
 
@@ -32,21 +65,32 @@ Full-text translation, a reader-facing product, live CTR optimization, broad web
 crawling, reinforcement learning, and multilingual expansion are outside the
 initial scope.
 
+The project does not claim to improve real CTR or paid conversion, to always
+outperform platform editors, or to represent the preferences of all English
+readers. It tests what can be reproduced offline when real online commercial
+feedback is unavailable.
+
 ## System Flow
 
 ```text
 source record
   -> validation and provenance checks
   -> candidate generation by named strategies
-  -> hard-constraint filtering
-  -> rule, LLM, or learned ranking
-  -> frozen-set evaluation
-  -> error analysis and experiment report
+  -> validity filtering
+  -> platform-preference ranking
+  -> Top-K and versioned evaluation
+  -> development-set failure mining
+  -> hard negatives and preference data
+  -> Reward Model update and a new version
 ```
 
 Every stage exchanges versioned artifacts rather than hidden in-memory state.
 This makes it possible to compare rankers against the exact same candidates and
 to reproduce a result without regenerating upstream data.
+
+Frozen-test evaluation branches from a declared release candidate and ends in a
+report. Its samples and failure cases do not flow back into prompts, rules,
+training data, weights, thresholds, or model selection.
 
 ## Architecture Principles
 
@@ -91,10 +135,11 @@ tool workspaces are excluded from Git.
 
 | Stage | Question | Exit condition |
 | --- | --- | --- |
-| V0 | Can deterministic rules establish a useful floor? | Reproducible Top 3 baseline and documented failures |
-| V1 | Which LLM judging protocol is stable enough? | Blind comparison of pointwise, pairwise, and listwise judging |
-| V2 | Does a learned ranker beat both baselines? | Improvement on the untouched frozen set with uncertainty reported |
-| V3 | Does limited human feedback correct weak-label bias? | Ablation showing where human labels help and where they do not |
+| V0 | Can strategy-diverse prompting plus pointwise weighted scoring establish a useful baseline? | Reproducible candidate and score artifacts with documented pilot failures |
+| V1 | Does a better candidate-generation strategy improve coverage and diversity? | Improvement with the V0 ranker held fixed |
+| V2 | Are pairwise or listwise preferences more reliable than pointwise scores? | Blind, order-robust comparison over a fixed candidate pool |
+| V3 | Does a Reward Model trained on weak preferences and hard negatives outperform the baselines? | Predeclared improvement without more critical violations |
+| V4 | Where does limited independent human feedback correct weak-label bias? | Ablation of weak labels, human labels, and their combination |
 
 See [docs/experiment_plan.md](docs/experiment_plan.md) for stage gates and
 [docs/evaluation_protocol.md](docs/evaluation_protocol.md) for the common
@@ -105,9 +150,9 @@ evaluation contract.
 - [Architecture](docs/architecture.md): boundaries, dependency direction, and
   the planned package map
 - [Data card](docs/data_card.md): provenance, release policy, splits, and leakage
-  controls
+  controls, including Platform Anchor semantics
 - [Evaluation protocol](docs/evaluation_protocol.md): frozen-set and human
-  evaluation rules
+  evaluation rules and published-title diagnostics
 - [Error taxonomy](docs/error_taxonomy.md): annotation categories and severity
 - [Experiment plan](docs/experiment_plan.md): research sequence and promotion
   criteria
@@ -225,5 +270,6 @@ FastAPI wrapper: three generation
 strategies produce 12 English title candidates, then an eight-dimension model
 judge is verified with deterministic weighted arithmetic to select one eligible
 winner. The default deterministic adapter, schemas, CLI, synthetic example, and
-offline tests are implemented. Learned ranking, private-data ingestion, and
+offline tests are implemented. The separately held-out 100-record Frozen Test
+Set has not yet been materialized. Learned ranking, private-data ingestion, and
 asynchronous/online services remain future work.
