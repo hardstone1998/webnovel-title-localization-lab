@@ -3,13 +3,11 @@
   "generation": {
     "max_attempts": 3,
     "prompt_versions": {
-      "source_title": "source-title-v3-anchor-first",
-      "synopsis": "synopsis-v3-anchor-first",
-      "market_localized": "market-localized-v3-anchor-first"
+      "source_title": "source-title-v2",
+      "synopsis": "synopsis-v2",
+      "market_localized": "market-localized-v2"
     },
-    "parameters": {
-      "temperature": 0.7
-    },
+    "parameters": {"temperature": 0.7},
     "target_locale": "en-US",
     "target_market": "English-language web fiction"
   },
@@ -39,13 +37,7 @@
       "clarity_concision": "是否清晰、简洁且适合作为正式剧名",
       "integrity_safety": "是否避免虚构事实、重大剧透和误导性标题党"
     },
-    "tie_break_order": [
-      "authoritative_total",
-      "semantic_fidelity",
-      "integrity_safety",
-      "natural_english",
-      "candidate_id"
-    ]
+    "tie_break_order": ["authoritative_total", "semantic_fidelity", "integrity_safety", "natural_english", "candidate_id"]
   },
   "provider": {
     "model": "${LLM_MODEL:-gpt-4.1-mini}",

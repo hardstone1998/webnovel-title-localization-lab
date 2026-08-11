@@ -4,7 +4,7 @@ import os
 
 import pytest
 from app.config.pipeline_config import load_config
-from app.config.settings import _load_dotenv
+from app.config.settings import _load_dotenv, _pipeline_config_path
 from app.domain.errors import ValidationError
 
 
@@ -20,6 +20,12 @@ def test_dotenv_loader_uses_file_values_without_overriding_environment(
 
     assert os.environ["APP_NAME"] == "from-environment"
     assert os.environ["LOG_LEVEL"] == "DEBUG"
+
+
+def test_pipeline_config_path_accepts_project_relative_override(project_root) -> None:
+    assert _pipeline_config_path("configs/title_selection.baseline_v0.json") == (
+        project_root / "configs" / "title_selection.baseline_v0.json"
+    )
 
 
 def test_provider_profile_uses_explicit_environment_configuration(

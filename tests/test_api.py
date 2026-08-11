@@ -113,13 +113,34 @@ def test_localization_api_returns_detailed_ranked_result(project_root, caplog) -
     assert body["ranked_titles"][0]["rank"] == 1
     assert body["ranked_titles"][0]["total_score"] == body["selected"]["score"]
     assert all(
-        set(item["dimensions"]) == set(DIMENSIONS) for item in body["ranked_titles"]
+        set(item)
+        == {
+            "rank",
+            "candidate_id",
+            "title",
+            "strategy",
+            "ordinal",
+            "prompt_version",
+            "dimensions",
+            "total_score",
+            "critical_violation_codes",
+        }
+        for item in body["ranked_titles"]
     )
+    assert all(set(item["dimensions"]) == set(DIMENSIONS) for item in body["ranked_titles"])
     assert all(
         isinstance(score, int)
         for item in body["ranked_titles"]
         for score in item["dimensions"].values()
     )
+    assert {item["strategy"] for item in body["ranked_titles"]} == {
+        "source_title",
+        "synopsis",
+        "market_localized",
+    }
+    assert {item["ordinal"] for item in body["ranked_titles"]} == {1, 2, 3, 4}
+    assert all(item["prompt_version"].endswith("anchor-first") for item in body["ranked_titles"])
+    assert all(item["critical_violation_codes"] == [] for item in body["ranked_titles"])
     assert "candidate_set" not in body
     assert "ranking_result" not in body
     assert "report" not in body

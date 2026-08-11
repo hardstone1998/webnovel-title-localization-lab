@@ -37,6 +37,9 @@ def localize_title(request: Request, body: LocalizationRequest) -> LocalizationR
         )
 
     scores_by_id = {item.candidate_id: item for item in outcome.ranking.scores}
+    candidates_by_id = {
+        item.candidate_id: item for item in outcome.candidate_set.candidates
+    }
     winner = scores_by_id[winner_id]
     selected = SelectedTitle(
         candidate_id=winner.candidate_id,
@@ -48,11 +51,19 @@ def localize_title(request: Request, body: LocalizationRequest) -> LocalizationR
             rank=rank,
             candidate_id=scores_by_id[candidate_id].candidate_id,
             title=scores_by_id[candidate_id].title,
+            strategy=candidates_by_id[candidate_id].strategy,
+            ordinal=candidates_by_id[candidate_id].ordinal,
+            prompt_version=candidates_by_id[candidate_id].provenance.prompt_version,
             dimensions={
                 dimension: detail.score
                 for dimension, detail in scores_by_id[candidate_id].dimensions.items()
             },
             total_score=float(scores_by_id[candidate_id].authoritative_total),
+            critical_violation_codes=[
+                violation.code
+                for violation in scores_by_id[candidate_id].violations
+                if violation.severity == "critical"
+            ],
         )
         for rank, candidate_id in enumerate(outcome.ranking.ordered_candidate_ids, start=1)
     ]

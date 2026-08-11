@@ -25,6 +25,13 @@ def _cors_origins(value: str) -> tuple[str, ...]:
     return tuple(origin.strip() for origin in value.split(",") if origin.strip())
 
 
+def _pipeline_config_path(value: str | None) -> Path:
+    if not value or not value.strip():
+        return PROJECT_ROOT / "configs" / "title_selection.default.json"
+    configured = Path(value.strip())
+    return configured if configured.is_absolute() else PROJECT_ROOT / configured
+
+
 def _load_dotenv(path: Path) -> None:
     """Load simple KEY=VALUE entries without overriding explicit environment values."""
 
@@ -62,5 +69,5 @@ def get_settings() -> Settings:
         environment=os.getenv("APP_ENV", "development"),
         log_level=os.getenv("LOG_LEVEL", "INFO").upper(),
         cors_origins=_cors_origins(os.getenv("CORS_ORIGINS", "")),
-        pipeline_config_path=PROJECT_ROOT / "configs" / "title_selection.default.json",
+        pipeline_config_path=_pipeline_config_path(os.getenv("PIPELINE_CONFIG_PATH")),
     )

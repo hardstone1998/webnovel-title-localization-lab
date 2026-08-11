@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import logging
 import re
 import time
@@ -105,7 +104,13 @@ def build_generation_prompt(
     excluded_titles: tuple[str, ...] = (),
 ) -> tuple[str, dict[str, Any]]:
     context = generation_context(source, strategy, config)
-    prompt = _build_generation_prompt(strategy, count, context, excluded_titles)
+    prompt = _build_generation_prompt(
+        strategy,
+        count,
+        context,
+        excluded_titles,
+        prompt_version=config.prompt_versions[strategy],
+    )
     return prompt, context
 
 

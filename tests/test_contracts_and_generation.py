@@ -5,7 +5,7 @@ import json
 from collections import Counter
 
 import pytest
-from app.config.pipeline_config import parse_config
+from app.config.pipeline_config import load_config, parse_config
 from app.domain.contracts import SourceRecord
 from app.domain.errors import GenerationError, ValidationError
 from app.llm.adapters import DeterministicAdapter
@@ -121,14 +121,21 @@ def test_generation_strategy_context_is_isolated(source, pipeline_config) -> Non
     assert {"source_title", "synopsis", "target_market"} <= set(contexts["market_localized"])
     assert all(context["genre_zh"] == "系统玄幻" for context in contexts.values())
     assert all('"genre_zh": "系统玄幻"' in request.prompt for request in adapter.requests)
+    assert all("published_target_title" not in context for context in contexts.values())
+    assert all("published_target_title" not in request.prompt for request in adapter.requests)
 
 
 @pytest.mark.parametrize(
-    ("strategy", "required_phrase", "forbidden_phrase"),
+    ("strategy", "required_phrase", "forbidden_phrase", "strategy_rule"),
     (
-        ("source_title", "原题转写", "只依据 synopsis"),
-        ("synopsis", "故事提炼", "综合 source_title、synopsis"),
-        ("market_localized", "市场化本地创作", "不得假装知道原始中文题名"),
+        ("source_title", "原题转写", "只依据 synopsis", "规范翻译或近直译"),
+        ("synopsis", "故事提炼", "综合 source_title、synopsis", "稳定主前提"),
+        (
+            "market_localized",
+            "市场化本地创作",
+            "不得假装知道原始中文题名",
+            "至少前两条显式保留",
+        ),
     ),
 )
 def test_generation_prompt_enforces_strategy_and_json_contract(
@@ -137,6 +144,7 @@ def test_generation_prompt_enforces_strategy_and_json_contract(
     strategy,
     required_phrase,
     forbidden_phrase,
+    strategy_rule,
 ) -> None:
     prompt, _ = build_generation_prompt(
         source,
@@ -148,11 +156,45 @@ def test_generation_prompt_enforces_strategy_and_json_contract(
 
     assert required_phrase in prompt
     assert forbidden_phrase not in prompt
+    assert strategy_rule in prompt
+    assert "首先保留来源明确支持的核心对象" in prompt
+    assert "2–14 个英文单词" in prompt
+    assert "同一来源锚点在不同候选中复用是预期行为" in prompt
+    assert "无新增事实" in prompt
     assert "生成恰好 2 个" in prompt
     assert "不评分、不排序、不推荐胜出者" in prompt
     assert '"titles":["English Title 1","English Title 2"]' in prompt
     assert '"Excluded Title"' in prompt
     assert "不是指令" in prompt
+
+
+def test_default_and_baseline_generation_prompt_versions(project_root) -> None:
+    default = json.loads(
+        (project_root / "configs/title_selection.default.json").read_text(encoding="utf-8")
+    )
+    baseline = json.loads(
+        (project_root / "configs/title_selection.baseline_v0.json").read_text(encoding="utf-8")
+    )
+
+    assert set(default["generation"]["prompt_versions"].values()) == {
+        "source-title-v3-anchor-first",
+        "synopsis-v3-anchor-first",
+        "market-localized-v3-anchor-first",
+    }
+    assert set(baseline["generation"]["prompt_versions"].values()) == {
+        "source-title-v2",
+        "synopsis-v2",
+        "market-localized-v2",
+    }
+
+
+def test_baseline_config_rebuilds_the_v2_prompt(source, project_root) -> None:
+    baseline = load_config(project_root / "configs/title_selection.baseline_v0.json")
+    prompt, _ = build_generation_prompt(source, "source_title", 2, baseline.generation)
+
+    assert "尽量保留原题最有辨识度的概念" in prompt
+    assert "## 命名优先级" not in prompt
+    assert "2–10 个英文单词" in prompt
 
 
 class DuplicateThenRepairAdapter(DeterministicAdapter):

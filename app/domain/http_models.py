@@ -43,8 +43,12 @@ class RankedTitleScore(BaseModel):
     rank: int
     candidate_id: str
     title: str
+    strategy: str
+    ordinal: int
+    prompt_version: str
     dimensions: dict[str, int]
     total_score: float
+    critical_violation_codes: list[str]
 
 
 class LocalizationResponse(BaseModel):

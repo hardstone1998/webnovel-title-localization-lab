@@ -21,7 +21,6 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-
 ROOT = Path(__file__).resolve().parents[1]
 DIMENSIONS = (
     "semantic_fidelity",
@@ -49,7 +48,11 @@ CSV_FIELDS = (
     "rank",
     "candidate_id",
     "candidate_title",
+    "candidate_strategy",
+    "candidate_ordinal",
+    "candidate_prompt_version",
     "candidate_total_score",
+    "critical_violation_codes",
     *DIMENSIONS,
 )
 
@@ -146,7 +149,7 @@ def post_json(endpoint: str, payload: Mapping[str, Any], timeout: float) -> tupl
         method="POST",
     )
     try:
-        with urlopen(request, timeout=timeout) as response:  # noqa: S310 - endpoint is CLI input
+        with urlopen(request, timeout=timeout) as response:
             status = response.status
             raw_response = response.read().decode("utf-8")
     except HTTPError as exc:
@@ -193,7 +196,7 @@ def rows_from_response(record: Mapping[str, Any], response: Mapping[str, Any]) -
     selected = response.get("selected")
     ranked_titles = response.get("ranked_titles")
     if not isinstance(selected, Mapping) or not isinstance(ranked_titles, list):
-        raise ValueError("successful response is missing selected or ranked_titles")
+        raise TypeError("successful response is missing selected or ranked_titles")
 
     base = input_context(record) | {
         "status": "success",
@@ -205,15 +208,21 @@ def rows_from_response(record: Mapping[str, Any], response: Mapping[str, Any]) -
     }
     for ranked in ranked_titles:
         if not isinstance(ranked, Mapping):
-            raise ValueError("ranked_titles contains a non-object item")
+            raise TypeError("ranked_titles contains a non-object item")
         dimensions = ranked.get("dimensions", {})
         if not isinstance(dimensions, Mapping):
-            raise ValueError("ranked title dimensions is not an object")
+            raise TypeError("ranked title dimensions is not an object")
         yield base | {
             "rank": ranked.get("rank", ""),
             "candidate_id": ranked.get("candidate_id", ""),
             "candidate_title": ranked.get("title", ""),
+            "candidate_strategy": ranked.get("strategy", ""),
+            "candidate_ordinal": ranked.get("ordinal", ""),
+            "candidate_prompt_version": ranked.get("prompt_version", ""),
             "candidate_total_score": ranked.get("total_score", ""),
+            "critical_violation_codes": json.dumps(
+                ranked.get("critical_violation_codes", []), ensure_ascii=False
+            ),
             **{dimension: dimensions.get(dimension, "") for dimension in DIMENSIONS},
         }
 
@@ -229,7 +238,11 @@ def failure_row(record: Mapping[str, Any], status: int | None, error: str) -> di
         "rank": "",
         "candidate_id": "",
         "candidate_title": "",
+        "candidate_strategy": "",
+        "candidate_ordinal": "",
+        "candidate_prompt_version": "",
         "candidate_total_score": "",
+        "critical_violation_codes": "",
         **{dimension: "" for dimension in DIMENSIONS},
     }
 
@@ -253,7 +266,7 @@ def run_record(
         if not response_rows:
             raise ValueError("successful response has no ranked titles")
         return line_number, response_rows, True, ""
-    except (BatchInputError, ValueError) as exc:
+    except (BatchInputError, TypeError, ValueError) as exc:
         return line_number, [failure_row(record, None, str(exc))], False, str(exc)
 
 
@@ -311,6 +324,7 @@ def main() -> int:
                 executor.map(worker, records), start=1
             ):
                 writer.writerows(rows)
+                csv_file.flush()
                 if succeeded:
                     successful += 1
                     print(f"[{total}/{len(records)}] line {line_number}: success", flush=True)
