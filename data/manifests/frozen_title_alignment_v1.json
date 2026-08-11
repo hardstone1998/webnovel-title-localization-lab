@@ -1,0 +1,969 @@
+{
+  "dataset_id": "novel-pairs-frozen-title-alignment-v1",
+  "dataset_role": "Frozen Test Set",
+  "scope": "Chinese-to-English title correspondence and title-localization evaluation only",
+  "limitations": [
+    "The selected source records do not include Chinese synopsis, genre, or original-platform URL.",
+    "They must not be used with workflows that require those fields."
+  ],
+  "prohibited_uses": [
+    "prompt adjustment",
+    "model training or fine-tuning",
+    "model, checkpoint, or strategy selection",
+    "scoring-weight, threshold, or metric tuning",
+    "hard-negative or preference-pair construction"
+  ],
+  "artifact": {
+    "path": "data/processed/novel_pairs/100/novel_pairs_100.jsonl",
+    "sha256": "c075a70068e1543fd801f6e138ea512ea2cb2a861f74e43e4afcb5efa1dc949f",
+    "records": 100,
+    "parser_version": "novel-pair-metadata-v2.0"
+  },
+  "source": {
+    "path": "data/processed/novel_pairs/1000/novel_pairs_1000.csv",
+    "sha256": "41fc4fd774a7e649ed4bf734acf694075c2bc657fa64da1d6931325ee01cf1fd",
+    "records": 1000,
+    "git_policy": "local_only"
+  },
+  "split": {
+    "algorithm": "exclude legacy V0 pilot IDs and pre-freeze audit rejections; sort eligible pair IDs by SHA-256(seed:pair_id); take first 100",
+    "seed": "frozen-title-alignment-v1-2026-08-11",
+    "legacy_pilot_path": "data/processed/novel_pairs/pilot_v0/novel_pairs_100.jsonl",
+    "legacy_pilot_sha256": "3275317d63950313df2650ca11301e0e1eea71db2f22a444c1b6936ad0bd34b3",
+    "legacy_pilot_records": 100,
+    "remaining_training_records": 900,
+    "eligible_records": 899,
+    "pilot_overlap_records": 0,
+    "unique_source_record_ids": 100,
+    "pre_freeze_rejections": [
+      {
+        "pair_id": "e3362c1401d4766f3b7347f2edf409df2912a7bc",
+        "reason": "Chinese/English author conflict in title mapping audit"
+      }
+    ]
+  },
+  "normalization": {
+    "method": "Latin-1 mojibake decoded as GB18030 only when the result contains CJK characters; leading BOM removed",
+    "source_csv_unchanged": true
+  },
+  "validation": {
+    "structural": {
+      "unique_pair_ids": 100,
+      "all_cross_snapshot_validated": true,
+      "mapping_types": {
+        "same_entity_bilingual_alias_cross_snapshot": 100
+      },
+      "review_statuses": {
+        "formal": 100
+      }
+    },
+    "semantic_title_author_audit": {
+      "method": "Per-record Chinese/English title and author review; localized rather than literal English titles are accepted when they identify the same work.",
+      "confirmed": 100,
+      "incorrect": 0,
+      "unverifiable": 0,
+      "records": [
+        {
+          "pair_id": "09f6ec1851d54695b663071a5dc17c6dfe1e5b02",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "487bb80b6795f03b1c0935a165b2943fb822945b",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "eb61c808196b0d1d2fc039abd956e48bb35aa8fe",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "14cab15e8786e29a299b09c7bbdd6764af2ae6e6",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "801e234a69e3dc4d0fb3580c49ba72cc80b571a6",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "fcec902f61fffcce52f29e2b51ae3acb68ffdafa",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "7bb3e25b932487c6a179e3e58a6a7910cde9d9d3",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "1bf0843592baf736c5198545ac2ecdaf88336df4",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "00fecc980a59e5d308166e088e8d815ad68311fb",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "c4be5f51e9fac993c187679f11c68c08307312f5",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "8d48d3545b627fae0c015233ce790ac0a1793d72",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "a96b007a3cd5131ccd463f8790b5d17c80c034e8",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "41928d923c03317e30bd06c7bc675723f3bc7693",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "8441a2e6ab514fabeb8d043070379891a3dbba1a",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "fedcc24de45bbf2a32bcdfa4811408254d66f57a",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "58c543972a226e159b1022945e66e65778433c99",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "5fbdf54f436bed2e43acfdf3c9e24dae9947c27c",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "755b3cae18da2e44f81b8199caeae4471de8ea1d",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "6d59f6907c40626ba7b2b0c0dae32dd7874a2414",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "212196ccaa70a83527591e3d5e6d6b3c0e44bce3",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "1e6d2532d04430d0596f733af0dcaf4e65422997",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "5e95a9bc37ae14a945341182fe78790dec03747a",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "b97810f5be5dcaefd014539ba07bf0ffe7b4acc7",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "3b06660ac74229de74d9a4a95f583a3bb1e2325d",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "31ef64fb2f8d49f2ef9b7c4cca91ffc42d9de201",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "853684f689a39903cf938cdd2586f587eba5dc21",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "b1494d4b0ca941e04d55cf228a76f67496df88ed",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "56b0028df1cf825f4c67196874bbd1a06842da13",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "3ddc3d6e5ee8e7915116733055c09ac5b208dc1c",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "7a4df69e83747acd1614951752935c1542dd154f",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "bbb790dda043e1206f638cf4ed017d3a962b7a51",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "c29fe163fcf07500420692522f69f339069e5cbf",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "37e430e845d00b7d6f255595af34db26c76b2de0",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "f7bd66aee9211db886c58dad1e24570ff989a81a",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "9d567e6514d5f241aeae3e647f3554e07342dfbe",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "9d499dc9c9e2f9a2de13a66ba6543f76db5648c1",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "c9b2f804c57460377554060102a131655dbca354",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "6b68a0ad4f7baed4f4f9ddad0d08070a7fdcaecb",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "5378dccd742dc923447c0e84d38676c684ca1e15",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "06ccfb7ffcc133f05d1b0802ab8d8ee7dd3ab75d",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "4b0930da40bab76d8f524f736dc7b3cd4dfc16c1",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "b621da02566811934895bdb13926c71371e7391e",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "7f646af625fe22d9fc00e72a1be9eed956dbfa4c",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "22e9a97dfecef71d3858f0a4bb766666f0a72be8",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "d8884bcc90154ca67892e2efd075d5842a4a3b6f",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "436677b7144c0840c9d758a656797bd83cb9fc2a",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "3215b5ef56ee5250c2526c8a1ee66cf311a33d9a",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "258515f974ebac048d07ad963f70e33cfd7a3314",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "f9abc85faa7594f209f48d5b151f5fc29627d1de",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "49a211f41d2ad6460ed42604f0cc616953817b6b",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "c6c2c738dc2b296479f6abbfc074302d92da5af0",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "e6cf780150ea40bfc9d785111668cd729864cea2",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "ea7e14d90b5c9ccefca61711e1797b1ff385f8d9",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "305bc0c213022203ef98aa908cb641e12fd4fd3e",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "909c0c698af7a94a97d0c68187edf72c5625d9f7",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "b3d42f029b5ff8302c93a44069452a6d1a95d1ea",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "1ae4db53455f6c3c997b4037a04e5820f6ce2b01",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "4b1b74407ee9215a41023e899b8b49e8dc07035b",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "a638861c0c11836b76bcba8f2a88c9b32ca918b8",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "0219b12879c4523158ee0cdfb0ae42559d08d441",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "2940d6a1b0c2fc7068228fe6113817b127fe4551",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "e0466d8a9f34d5c04c0486df83c180118e6dbf0a",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "08497914680c75244c280624e6ff3ac5b8a4d15c",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "950ead7218352c2fcd582ec5c94b2d06c5ebd7d4",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "1b07358161cbc7d302cfe1b7555093c1128a1e9b",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "b6e952954951d06311aec2979480a1e52c98c39e",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "88500e0fa12b313b045901838f1c3f00f1ff1b57",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "2adf1d7519062743bbeb702c0e2733fe43bab2c2",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "e2be7de7310101d6ce462c8510c82c2c05e29616",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "c8883b2bfa366f0b54c4ddbc910fd417382bbe56",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "41bec1e89c95cd29f1cb259a834059d5cb16e5f0",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "d6344f4fc185aad7d03ab448d9e5fae68eb593a5",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "21eeafb2c38201c476fd69ce3ee42e98deaad248",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "6baba82b879e5fd0a13c087aec60e6cf7eb32100",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "d6efa048056a3556fb27c799e5de852468fbbe07",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "881d9916a02709c905043ad703f919257687e79e",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "858548f38a4dffd03ea5b71a5d75b4e2b1aaa082",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "d7437650786ad700f91469cf6d729d362d77a248",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "c327c98ab9e664b7acfc03606c78ab985759bc44",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "c2845d9920b3b1dadbfcf90219d30c3b2523f261",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "93de77e4b1cea256d7e4e7a5b305c453c611bd1d",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "84a7e5eb7855e4afd9a600f601b709d0d2e7fd35",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "17f983dbcb7d0d203b7713865eb1f11db2a1f040",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "aed48795341d21f011ee53380ef543ffddd16422",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "ae7b66ec0ac622411522c6b7e9cc1ed3a65f8c6a",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "f83a99a72ccccde31516bf3f53339aef724ffc6e",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "f5fd412759c6cd08ec857f1a3b5e96de12c802ee",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "c1e57d5efb311f6b965923019143865b25b166d8",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "ffbd6b2b1e892a3a43ba89c2f8ec2403f8f5d550",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "cb8400ed23a78ac1557290df0a31931183e33e90",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "023091486b6b3a56294cecd5c0df664cfa97a88e",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "7dec51531ae28fcdf76ba546e84316cf0ad6da63",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "506cd47099f1508efd6164024dc19de7a55769dd",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "c11f28306df1ada7b39d67d7439cf7551250197b",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "4385c5a26582e1e3ffe6698ef37d8a7b762119c2",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "334676aeac250592eb2f16ed3171bbc6cd7e4a0b",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "4e8e1698a9afb2ecb407c38f43d4c83325087d0b",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "25c511d14a3e0d8da8f6ad8427ce0ce27f929466",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "1c9f20c2842645dec23c9f3c3542d52cd73bca05",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        },
+        {
+          "pair_id": "83ac1072bc6417c861db80e997d6adef9a32b81f",
+          "verdict": "confirmed",
+          "review_basis": [
+            "Chinese and English title semantic correspondence reviewed",
+            "Chinese and English author correspondence reviewed",
+            "curated cross-site mapping marked cross_snapshot_validated"
+          ]
+        }
+      ]
+    }
+  }
+}

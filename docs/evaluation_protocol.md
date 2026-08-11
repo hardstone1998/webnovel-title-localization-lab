@@ -26,6 +26,14 @@ The 100 records already used in the V0 baseline are not this Frozen Test Set;
 they are pilot / early-development data because their examples and outcomes have
 already been observed.
 
+`novel-pairs-frozen-title-alignment-v1` is the declared 100-record Frozen Test
+Set. It is drawn deterministically from the local 1,000-record corpus after
+excluding the V0 pilot IDs. Its source records contain title and author mapping
+evidence but no Chinese synopsis or genre, so it is valid only for title
+correspondence and title-localization evaluation, not synopsis-dependent API
+batch runs. Its exact fingerprint, split procedure, and per-record audit are in
+`data/manifests/frozen_title_alignment_v1.json`.
+
 ## Frozen Test Set Rules
 
 Frozen-test records and outcomes must not be used to:

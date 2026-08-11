@@ -23,8 +23,6 @@ from urllib.request import Request, urlopen
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_INPUT = ROOT / "data/processed/novel_pairs/100/novel_pairs_100.jsonl"
-DEFAULT_OUTPUT = ROOT / "output/novel_pairs_100_title_localizations.csv"
 DIMENSIONS = (
     "semantic_fidelity",
     "natural_english",
@@ -64,8 +62,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Run a JSONL novel-pair batch through /v1/title-localizations."
     )
-    parser.add_argument("--input", type=Path, default=DEFAULT_INPUT, help="source JSONL file")
-    parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT, help="result CSV file")
+    parser.add_argument("--input", type=Path, required=True, help="source JSONL file")
+    parser.add_argument("--output", type=Path, required=True, help="result CSV file")
     parser.add_argument(
         "--endpoint",
         default="http://127.0.0.1:8000/v1/title-localizations",

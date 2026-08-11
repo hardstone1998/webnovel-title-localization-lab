@@ -9,6 +9,9 @@ Tracked in Git:
 - `examples/`: synthetic, redistributable records used to explain contracts
 - `manifests/`: non-sensitive dataset inventories, fingerprints, and integrity notes
 - `batch_tests/`: version-controlled request inputs and deterministic batch-validation outputs
+- `processed/novel_pairs/100/novel_pairs_100.jsonl`: the explicitly versioned,
+  100-record Frozen Title-Alignment Test Set; it is an exception to the local
+  processed-data default and must not be used for tuning or training.
 
 Local by default and ignored by Git:
 
@@ -26,3 +29,5 @@ and redistribution decision. The governing policy is
 
 The current local novel-pair inventory is documented in
 [`manifests/novel_pairs_2026-07-29.json`](manifests/novel_pairs_2026-07-29.json).
+The frozen-set split and per-record audit are documented without title text in
+[`manifests/frozen_title_alignment_v1.json`](manifests/frozen_title_alignment_v1.json).
