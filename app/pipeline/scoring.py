@@ -127,7 +127,12 @@ def build_scoring_prompt(
     candidate_payload = [
         {"candidate_id": cid, "title": title} for cid, title in candidates
     ]
-    return _build_scoring_prompt(source_context, rubric, candidate_payload)
+    return _build_scoring_prompt(
+        source_context,
+        rubric,
+        candidate_payload,
+        prompt_version=config.prompt_version,
+    )
 
 
 def _validate_model_score(

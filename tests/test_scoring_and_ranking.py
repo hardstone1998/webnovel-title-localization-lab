@@ -4,6 +4,7 @@ from dataclasses import replace
 from decimal import Decimal
 
 import pytest
+from app.config.pipeline_config import load_config
 from app.domain.contracts import DIMENSIONS, fingerprint
 from app.domain.errors import ProviderError, ScoringError
 from app.llm.adapters import DeterministicAdapter
@@ -100,6 +101,37 @@ def test_scoring_prompt_preserves_frozen_pool_and_exact_output_contract(
     assert "DUPLICATE_CANDIDATE" in prompt
     assert '"scores"' in prompt
     assert all(dimension in prompt for dimension in DIMENSIONS)
+
+
+def test_v3_scoring_prompt_calibrates_title_granularity_without_label_leakage(
+    source,
+    candidate_set,
+    project_root,
+) -> None:
+    config = load_config(project_root / "configs/title_selection.scoring_v3.json")
+    candidates = tuple((item.candidate_id, item.title) for item in candidate_set.candidates)
+    source_with_label = replace(source, published_target_title="Platform Reference Title")
+
+    prompt = build_scoring_prompt(source_with_label, candidates, config.scoring)
+
+    assert "标题不是简介的压缩版" in prompt
+    assert "不得按它复述了多少简介细节评分" in prompt
+    assert "更长、包含更多专名、剧情事件、机制或营销性措辞的标题不自动" in prompt
+    assert "不得仅因标题短小、简洁、克制或未复述剧情钩子" in prompt
+    assert "published_target_title" not in prompt
+    assert source_with_label.published_target_title not in prompt
+
+
+def test_v2_scoring_prompt_remains_available_as_baseline(
+    source,
+    candidate_set,
+    pipeline_config,
+) -> None:
+    candidates = tuple((item.candidate_id, item.title) for item in candidate_set.candidates)
+
+    prompt = build_scoring_prompt(source, candidates, pipeline_config.scoring)
+
+    assert "标题粒度校准（高优先级）" not in prompt
 
 
 def test_incomplete_pool_is_retried_then_rejected(

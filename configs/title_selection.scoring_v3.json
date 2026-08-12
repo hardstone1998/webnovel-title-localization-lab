@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.0",
+  "generation": {
+    "max_attempts": 3,
+    "prompt_versions": {
+      "source_title": "source-title-v3-anchor-first",
+      "synopsis": "synopsis-v3-anchor-first",
+      "market_localized": "market-localized-v3-anchor-first"
+    },
+    "parameters": {
+      "temperature": 0.7
+    },
+    "target_locale": "en-US",
+    "target_market": "English-language web fiction"
+  },
+  "scoring": {
+    "max_attempts": 2,
+    "rubric_version": "title-rubric-v1",
+    "weight_version": "default-weights-v1",
+    "prompt_version": "eight-dimension-score-v3-title-granularity",
+    "permutation_seed": 20260729,
+    "weights": {
+      "semantic_fidelity": 20,
+      "natural_english": 15,
+      "genre_tone_fit": 10,
+      "target_market_fit": 10,
+      "reader_appeal": 15,
+      "memorability_distinctiveness": 10,
+      "clarity_concision": 10,
+      "integrity_safety": 10
+    },
+    "dimension_guidance": {
+      "semantic_fidelity": "是否准确反映源内容支持的含义与故事前提",
+      "natural_english": "作为英文剧名是否自然、流畅并符合惯用表达",
+      "genre_tone_fit": "是否正确传达故事类型和基调",
+      "target_market_fit": "是否符合指定英语市场或平台的命名习惯",
+      "reader_appeal": "是否形成清晰且不过度夸大的读者吸引力",
+      "memorability_distinctiveness": "是否易于记忆并具有辨识度",
+      "clarity_concision": "是否清晰、简洁且适合作为正式剧名",
+      "integrity_safety": "是否避免虚构事实、重大剧透和误导性标题党"
+    },
+    "tie_break_order": [
+      "authoritative_total",
+      "semantic_fidelity",
+      "integrity_safety",
+      "natural_english",
+      "candidate_id"
+    ]
+  },
+  "provider": {
+    "model": "${LLM_MODEL:-gpt-4.1-mini}",
+    "base_url": "${LLM_BASE_URL:-https://api.openai.com/v1}",
+    "api_key_env": "LLM_API_KEY",
+    "timeout_seconds": "${LLM_TIMEOUT_SECONDS:-60}",
+    "max_tokens": "${LLM_MAX_TOKENS:-16000}"
+  }
+}

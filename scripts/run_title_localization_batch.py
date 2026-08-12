@@ -51,6 +51,7 @@ CSV_FIELDS = (
     "candidate_strategy",
     "candidate_ordinal",
     "candidate_prompt_version",
+    "scoring_prompt_version",
     "candidate_total_score",
     "critical_violation_codes",
     *DIMENSIONS,
@@ -219,6 +220,7 @@ def rows_from_response(record: Mapping[str, Any], response: Mapping[str, Any]) -
             "candidate_strategy": ranked.get("strategy", ""),
             "candidate_ordinal": ranked.get("ordinal", ""),
             "candidate_prompt_version": ranked.get("prompt_version", ""),
+            "scoring_prompt_version": ranked.get("scoring_prompt_version", ""),
             "candidate_total_score": ranked.get("total_score", ""),
             "critical_violation_codes": json.dumps(
                 ranked.get("critical_violation_codes", []), ensure_ascii=False
@@ -241,6 +243,7 @@ def failure_row(record: Mapping[str, Any], status: int | None, error: str) -> di
         "candidate_strategy": "",
         "candidate_ordinal": "",
         "candidate_prompt_version": "",
+        "scoring_prompt_version": "",
         "candidate_total_score": "",
         "critical_violation_codes": "",
         **{dimension: "" for dimension in DIMENSIONS},

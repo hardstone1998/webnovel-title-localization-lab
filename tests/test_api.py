@@ -121,6 +121,7 @@ def test_localization_api_returns_detailed_ranked_result(project_root, caplog) -
             "strategy",
             "ordinal",
             "prompt_version",
+            "scoring_prompt_version",
             "dimensions",
             "total_score",
             "critical_violation_codes",
@@ -140,6 +141,9 @@ def test_localization_api_returns_detailed_ranked_result(project_root, caplog) -
     }
     assert {item["ordinal"] for item in body["ranked_titles"]} == {1, 2, 3, 4}
     assert all(item["prompt_version"].endswith("anchor-first") for item in body["ranked_titles"])
+    assert {
+        item["scoring_prompt_version"] for item in body["ranked_titles"]
+    } == {"eight-dimension-score-v2"}
     assert all(item["critical_violation_codes"] == [] for item in body["ranked_titles"])
     assert "candidate_set" not in body
     assert "ranking_result" not in body

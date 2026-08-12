@@ -21,7 +21,6 @@ REQUIRED_COLUMNS = {
     "pair_id",
     "published_target_title",
     "status",
-    "selected_title",
     "rank",
     "candidate_id",
     "candidate_title",
@@ -105,13 +104,15 @@ def evaluate(rows: list[dict[str, str]], expected_candidates: int) -> dict[str, 
     strategy_hits: dict[str, int] = defaultdict(int)
     strategy_candidate_rows: dict[str, int] = defaultdict(int)
     prompt_versions: dict[str, int] = defaultdict(int)
+    scoring_prompt_versions: dict[str, int] = defaultdict(int)
 
     for pair_id, group in groups.items():
         anchor = normalize_title(group[0]["published_target_title"])
         if not anchor:
             raise ValueError(f"missing published_target_title for pair_id={pair_id}")
-        selected = normalize_title(group[0]["selected_title"])
         matches = [row for row in group if normalize_title(row["candidate_title"]) == anchor]
+        winner = min(group, key=_rank)
+        selected = normalize_title(group[0].get("selected_title") or winner["candidate_title"])
 
         top1_hits += selected == anchor
         hit_at_3 += any(_rank(row) <= 3 for row in matches)
@@ -129,6 +130,7 @@ def evaluate(rows: list[dict[str, str]], expected_candidates: int) -> dict[str, 
                 raise ValueError(f"missing candidate_strategy for pair_id={pair_id}")
             strategy_candidate_rows[strategy] += 1
             prompt_versions[row["candidate_prompt_version"]] += 1
+            scoring_prompt_versions[row.get("scoring_prompt_version") or "unknown"] += 1
             candidate_rows += 1
             codes = parse_critical_codes(row["critical_violation_codes"])
             critical_candidates += bool(codes)
@@ -178,6 +180,7 @@ def evaluate(rows: list[dict[str, str]], expected_candidates: int) -> dict[str, 
             for strategy in strategies
         },
         "candidate_prompt_versions": dict(sorted(prompt_versions.items())),
+        "scoring_prompt_versions": dict(sorted(scoring_prompt_versions.items())),
     }
 
 

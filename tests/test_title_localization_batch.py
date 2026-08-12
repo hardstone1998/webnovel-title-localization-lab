@@ -39,6 +39,7 @@ def test_batch_rows_keep_candidate_provenance_and_critical_violations(project_ro
                         "strategy": "source_title",
                         "ordinal": 1,
                         "prompt_version": "source-title-v3-anchor-first",
+                        "scoring_prompt_version": "eight-dimension-score-v3-title-granularity",
                         "total_score": 88.0,
                         "critical_violation_codes": ["HOOK_INVENTED"],
                         "dimensions": {dimension: 8 for dimension in batch.DIMENSIONS},
@@ -51,6 +52,7 @@ def test_batch_rows_keep_candidate_provenance_and_critical_violations(project_ro
     assert rows[0]["candidate_strategy"] == "source_title"
     assert rows[0]["candidate_ordinal"] == 1
     assert rows[0]["candidate_prompt_version"] == "source-title-v3-anchor-first"
+    assert rows[0]["scoring_prompt_version"] == "eight-dimension-score-v3-title-granularity"
     assert rows[0]["critical_violation_codes"] == '["HOOK_INVENTED"]'
     assert set(rows[0]) == set(batch.CSV_FIELDS)
 
@@ -62,5 +64,6 @@ def test_failed_batch_row_keeps_new_columns_blank(project_root) -> None:
     assert row["candidate_strategy"] == ""
     assert row["candidate_ordinal"] == ""
     assert row["candidate_prompt_version"] == ""
+    assert row["scoring_prompt_version"] == ""
     assert row["critical_violation_codes"] == ""
     assert set(row) == set(batch.CSV_FIELDS)

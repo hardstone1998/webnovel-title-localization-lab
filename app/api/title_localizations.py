@@ -54,6 +54,9 @@ def localize_title(request: Request, body: LocalizationRequest) -> LocalizationR
             strategy=candidates_by_id[candidate_id].strategy,
             ordinal=candidates_by_id[candidate_id].ordinal,
             prompt_version=candidates_by_id[candidate_id].provenance.prompt_version,
+            scoring_prompt_version=str(
+                outcome.ranking.scoring_provenance["prompt_version"]
+            ),
             dimensions={
                 dimension: detail.score
                 for dimension, detail in scores_by_id[candidate_id].dimensions.items()

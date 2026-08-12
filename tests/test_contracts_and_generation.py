@@ -70,6 +70,12 @@ def test_config_rejects_unknown_dimension_and_bad_weight_total(
         parse_config(bad_total)
     assert error.value.code == "INVALID_WEIGHT_TOTAL"
 
+    unsupported_version = copy.deepcopy(data)
+    unsupported_version["scoring"]["prompt_version"] = "uncontrolled-scoring-prompt"
+    with pytest.raises(ValidationError) as error:
+        parse_config(unsupported_version)
+    assert error.value.code == "UNSUPPORTED_SCORING_PROMPT_VERSION"
+
 
 def test_json_schemas_are_valid_draft_2020_12(project_root) -> None:
     for name in ("candidate_set.schema.json", "ranking_result.schema.json"):
@@ -186,6 +192,16 @@ def test_default_and_baseline_generation_prompt_versions(project_root) -> None:
         "synopsis-v2",
         "market-localized-v2",
     }
+
+
+def test_scoring_v3_config_preserves_baseline_weights(project_root) -> None:
+    baseline = load_config(project_root / "configs/title_selection.default.json")
+    calibrated = load_config(project_root / "configs/title_selection.scoring_v3.json")
+
+    assert calibrated.scoring.prompt_version == "eight-dimension-score-v3-title-granularity"
+    assert calibrated.scoring.weights == baseline.scoring.weights
+    assert calibrated.scoring.tie_break_order == baseline.scoring.tie_break_order
+    assert calibrated.scoring.permutation_seed == baseline.scoring.permutation_seed
 
 
 def test_baseline_config_rebuilds_the_v2_prompt(source, project_root) -> None:

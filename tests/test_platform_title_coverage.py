@@ -32,6 +32,7 @@ def _row(
         "candidate_title": title,
         "candidate_strategy": strategy,
         "candidate_prompt_version": f"{strategy}-v3-anchor-first",
+        "scoring_prompt_version": "eight-dimension-score-v3-title-granularity",
         "critical_violation_codes": critical,
     }
 
@@ -70,3 +71,18 @@ def test_evaluate_reports_platform_coverage_and_strategy_breakdown(project_root)
     assert report["critical_violations"]["candidate_rate"] == 0.25
     assert report["strategy_coverage"]["source_title"]["record_hit_any"] == 0.5
     assert report["strategy_coverage"]["market_localized"]["record_hit_any"] == 0.5
+    assert report["scoring_prompt_versions"] == {
+        "eight-dimension-score-v3-title-granularity": 4
+    }
+
+
+def test_evaluate_derives_selection_from_rank_when_rescore_output_has_no_selected_title(
+    project_root,
+) -> None:
+    coverage = _coverage_module(project_root)
+    row = _row("one", "Published Title", rank=1, strategy="source_title")
+    row.pop("selected_title")
+
+    report = coverage.evaluate([row], expected_candidates=1)
+
+    assert report["platform_title_coverage"]["top_1_agreement"] == 1.0

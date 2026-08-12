@@ -46,6 +46,7 @@ class RankedTitleScore(BaseModel):
     strategy: str
     ordinal: int
     prompt_version: str
+    scoring_prompt_version: str
     dimensions: dict[str, int]
     total_score: float
     critical_violation_codes: list[str]

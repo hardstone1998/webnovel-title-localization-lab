@@ -174,6 +174,12 @@ def build_generation_prompt(
 # Stage 2: frozen-pool scoring
 # ---------------------------------------------------------------------------
 
+SCORING_PROMPT_VERSION_V2 = "eight-dimension-score-v2"
+SCORING_PROMPT_VERSION_V3 = "eight-dimension-score-v3-title-granularity"
+SUPPORTED_SCORING_PROMPT_VERSIONS = frozenset(
+    {SCORING_PROMPT_VERSION_V2, SCORING_PROMPT_VERSION_V3}
+)
+
 SCORING_PROMPT_TEMPLATE = """\
 你是独立的英语网文标题评审。你的职责是审计并评分冻结候选池，不参与标题创作。
 
@@ -269,14 +275,53 @@ candidates：
 dimensions 必须恰好包含 rubric 的全部八项；scores 必须恰好覆盖 candidates 的全部候选。
 """
 
+_V3_TITLE_GRANULARITY_RULES = """\
+## 标题粒度校准（高优先级）
+
+- 标题不是简介的压缩版。先判断候选标题已经作出的主张是否真实、是否准确锚定来源支持的核心对象、概念、关系、机制或主线之一；不得按它复述了多少简介细节评分。
+- 简短、克制或可品牌化的标题即使省略人物、事件、设定或后续发展，只要其自身主张准确且保留核心锚点，也可以获得中高 semantic_fidelity；未提及的信息不是缺陷。
+- 更长、包含更多专名、剧情事件、机制或营销性措辞的标题不自动更忠实、更有吸引力、更有辨识度或更适合市场。额外信息只有在来源支持、对标题身份必要且提高准确性或识别度时才构成加分。
+- LOW_DISTINCTIVENESS 仅适用于缺少可识别核心概念、可无差别套用于大量同类作品的标题。不得仅因标题短小、简洁、克制或未复述剧情钩子标记该问题。
+
+"""
+
+
+def _scoring_template(prompt_version: str) -> str:
+    if prompt_version == SCORING_PROMPT_VERSION_V2:
+        return SCORING_PROMPT_TEMPLATE
+    if prompt_version == SCORING_PROMPT_VERSION_V3:
+        return SCORING_PROMPT_TEMPLATE.replace(
+            "## 评审顺序\n",
+            _V3_TITLE_GRANULARITY_RULES + "## 评审顺序\n",
+            1,
+        ).replace(
+            "- semantic_fidelity：是否保持核心含义、人物关系、因果和故事前提；局部细节不能冒充全书主线。",
+            "- semantic_fidelity：标题已经表达的核心含义、人物关系、因果或故事前提是否准确且有来源支持；衡量主张准确性与核心锚点对齐度，不按剧情覆盖量加分。",
+            1,
+        ).replace(
+            "- target_market_fit：是否适合英语网文目录与小尺寸封面，是否符合连载阅读语境，同时不机械复制陈词滥调。",
+            "- target_market_fit：是否适合英语网文目录与小尺寸封面，是否符合连载阅读语境；长度、专名数量或营销化措辞本身不是优势。",
+            1,
+        ).replace(
+            "- reader_appeal：是否有明确、可理解且有来源支撑的好奇点、冲突或情绪承诺；只有声量没有问题意识的标题不应高分。",
+            "- reader_appeal：是否有明确、可理解且有来源支撑的核心概念、好奇点、冲突或情绪承诺；不得仅因剧情细节更多或声量更大加分。",
+            1,
+        ).replace(
+            "- memorability_distinctiveness：用词或概念组合是否有识别度；可替换到大量同类作品的万能标题应低分。",
+            "- memorability_distinctiveness：用词或概念组合是否有识别度；简短标题只要有来源支持的核心概念并非天然泛化，可替换到大量同类作品的万能标题才应低分。",
+            1,
+        )
+    raise ValueError(f"unsupported scoring prompt version: {prompt_version}")
+
 
 def build_scoring_prompt(
     source_context: dict[str, Any],
     rubric: dict[str, Any],
     candidates: list[dict[str, str]],
+    prompt_version: str = SCORING_PROMPT_VERSION_V2,
 ) -> str:
     """Build the stage-2 prompt for scoring the frozen candidate pool."""
-    return SCORING_PROMPT_TEMPLATE.format(
+    return _scoring_template(prompt_version).format(
         source_context=json.dumps(source_context, ensure_ascii=False, sort_keys=True),
         rubric=json.dumps(rubric, ensure_ascii=False, sort_keys=True),
         candidates=json.dumps(candidates, ensure_ascii=False),

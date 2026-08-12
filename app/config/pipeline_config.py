@@ -11,6 +11,7 @@ from typing import Any
 
 from ..domain.contracts import DIMENSIONS, STRATEGIES
 from ..domain.errors import ValidationError
+from ..prompts.templates import SUPPORTED_SCORING_PROMPT_VERSIONS
 from .settings import load_project_dotenv
 
 _ENV_VALUE = re.compile(r"^\$\{([A-Z][A-Z0-9_]*)(?::-([^}]*))?\}$")
@@ -124,6 +125,15 @@ def parse_config(data: dict[str, Any]) -> PipelineConfig:
         raise ValidationError(
             "每个评分维度都必须提供说明。",
             code="INVALID_DIMENSION_GUIDANCE",
+        )
+    if str(scoring.get("prompt_version", "")).strip() not in SUPPORTED_SCORING_PROMPT_VERSIONS:
+        raise ValidationError(
+            "评分提示词版本不受支持。",
+            code="UNSUPPORTED_SCORING_PROMPT_VERSION",
+            details={
+                "prompt_version": scoring.get("prompt_version"),
+                "supported": sorted(SUPPORTED_SCORING_PROMPT_VERSIONS),
+            },
         )
     required_versions = {
         "schema_version": data.get("schema_version"),
