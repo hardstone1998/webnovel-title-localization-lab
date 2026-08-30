@@ -3,15 +3,52 @@
   "generation": {
     "max_attempts": 3,
     "prompt_versions": {
-      "source_title": "source-title-v3-anchor-first",
-      "synopsis": "synopsis-v3-anchor-first",
-      "market_localized": "market-localized-v3-anchor-first"
+      "source_title": "source-title-v5-24-coverage-matrix",
+      "synopsis": "synopsis-v5-24-coverage-matrix",
+      "market_localized": "market-localized-v5-24-coverage-matrix"
     },
     "parameters": {
       "temperature": 0.7
     },
     "target_locale": "en-US",
-    "target_market": "English-language web fiction"
+    "target_market": "English-language web fiction",
+    "strategy_counts": {
+      "source_title": 12,
+      "synopsis": 6,
+      "market_localized": 6
+    },
+    "coverage_slots": {
+      "source_title": [
+        "short_canonical_translation",
+        "article_or_morphology_variant",
+        "natural_english_reordering",
+        "part_of_speech_or_word_order_variant",
+        "core_term_genre_expression",
+        "controlled_market_localization",
+        "singular_plural_or_number_variant",
+        "compound_or_preposition_variant",
+        "possessive_or_of_construction",
+        "tone_register_variant",
+        "anchor_preserving_phrase_expansion",
+        "anchor_preserving_phrase_compression"
+      ],
+      "synopsis": [
+        "stable_premise",
+        "core_mechanism_or_relationship",
+        "supported_complete_expression",
+        "protagonist_situation",
+        "central_conflict",
+        "world_or_genre_anchor"
+      ],
+      "market_localized": [
+        "anchor_preserving_market_title",
+        "anchor_preserving_alternative",
+        "controlled_market_exploration",
+        "premise_led_market_title",
+        "mechanism_or_relationship_led_market_title",
+        "genre_signalled_anchor_preserving_title"
+      ]
+    }
   },
   "scoring": {
     "max_attempts": 2,

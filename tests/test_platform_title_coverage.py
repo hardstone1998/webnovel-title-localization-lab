@@ -31,6 +31,7 @@ def _row(
         "candidate_id": f"cand_{pair_id}_{rank}",
         "candidate_title": title,
         "candidate_strategy": strategy,
+        "candidate_coverage_slot": f"{strategy}_slot",
         "candidate_prompt_version": f"{strategy}-v3-anchor-first",
         "scoring_prompt_version": "eight-dimension-score-v3-title-granularity",
         "critical_violation_codes": critical,
@@ -65,6 +66,7 @@ def test_evaluate_reports_platform_coverage_and_strategy_breakdown(project_root)
         "top_1_agreement": 0.5,
         "hit_at_3": 1.0,
         "hit_any": 1.0,
+        "near_exact_hit_any": 1.0,
         "matched_records": 2,
         "mean_rank_when_hit": 2.0,
     }
@@ -74,6 +76,18 @@ def test_evaluate_reports_platform_coverage_and_strategy_breakdown(project_root)
     assert report["scoring_prompt_versions"] == {
         "eight-dimension-score-v3-title-granularity": 4
     }
+    assert report["candidate_duplicates"]["duplicate_normalized_title_rate"] == 0.0
+
+
+def test_near_exact_coverage_is_reported_separately(project_root) -> None:
+    coverage = _coverage_module(project_root)
+    row = _row("one", "The Dragon Libraries", rank=1, strategy="source_title")
+    row["published_target_title"] = "Dragon Library"
+
+    report = coverage.evaluate([row], expected_candidates=1)
+
+    assert report["platform_title_coverage"]["hit_any"] == 0.0
+    assert report["platform_title_coverage"]["near_exact_hit_any"] == 1.0
 
 
 def test_evaluate_derives_selection_from_rank_when_rescore_output_has_no_selected_title(

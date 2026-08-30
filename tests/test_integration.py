@@ -44,8 +44,8 @@ def test_deterministic_pipeline_writes_schema_valid_artifacts(
     ranking_schema = read_json(project_root / "data/schemas/ranking_result.schema.json")
     Draft202012Validator(candidate_schema).validate(candidate_data)
     Draft202012Validator(ranking_schema).validate(ranking_data)
-    assert len(candidate_data["candidates"]) == 12
-    assert len(ranking_data["scores"]) == 12
+    assert len(candidate_data["candidates"]) == 24
+    assert len(ranking_data["scores"]) == 24
     assert ranking_data["winner_candidate_id"]
     assert outcome.report_path.read_text(encoding="utf-8").startswith("# 英文剧名生成与评分报告")
 
@@ -62,8 +62,8 @@ def test_in_memory_pipeline_matches_the_deterministic_candidate_contract(project
         model_adapter=DeterministicAdapter(),
     )
 
-    assert len(outcome.candidate_set.candidates) == 12
-    assert len(outcome.ranking.scores) == 12
+    assert len(outcome.candidate_set.candidates) == 24
+    assert len(outcome.ranking.scores) == 24
     assert outcome.ranking.winner_candidate_id
     assert outcome.report
 

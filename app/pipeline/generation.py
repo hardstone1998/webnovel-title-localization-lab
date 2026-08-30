@@ -78,13 +78,15 @@ def generation_context(
         "genre_zh": source.genre_zh,
         "target_locale": config.target_locale,
     }
+    coverage_context = {"coverage_slots": list(config.coverage_slots[strategy])}
     if strategy == "source_title":
-        return {**shared, "source_title": source.source_title}
+        return {**shared, **coverage_context, "source_title": source.source_title}
     if strategy == "synopsis":
-        return {**shared, "synopsis": source.synopsis}
+        return {**shared, **coverage_context, "synopsis": source.synopsis}
     if strategy == "market_localized":
         return {
             **shared,
+            **coverage_context,
             "source_title": source.source_title,
             "synopsis": source.synopsis,
             "target_market": config.target_market,
@@ -102,8 +104,10 @@ def build_generation_prompt(
     count: int,
     config: GenerationConfig,
     excluded_titles: tuple[str, ...] = (),
+    slot_offset: int = 0,
 ) -> tuple[str, dict[str, Any]]:
     context = generation_context(source, strategy, config)
+    context["coverage_slots"] = context["coverage_slots"][slot_offset : slot_offset + count]
     prompt = _build_generation_prompt(
         strategy,
         count,
@@ -134,9 +138,10 @@ class CandidateGenerator:
         for strategy in STRATEGIES:
             strategy_candidates: list[Candidate] = []
             attempt = 0
-            while len(strategy_candidates) < 4 and attempt < self.config.max_attempts:
+            target_count = self.config.strategy_counts[strategy]
+            while len(strategy_candidates) < target_count and attempt < self.config.max_attempts:
                 attempt += 1
-                needed = 4 - len(strategy_candidates)
+                needed = target_count - len(strategy_candidates)
                 excluded = tuple(item.normalized_title for item in candidates)
                 prompt, context = build_generation_prompt(
                     source,
@@ -144,6 +149,7 @@ class CandidateGenerator:
                     needed,
                     self.config,
                     excluded,
+                    slot_offset=len(strategy_candidates),
                 )
                 request = GenerationRequest(
                     strategy=strategy,
@@ -217,14 +223,15 @@ class CandidateGenerator:
                                 "provider_metadata": response.provider_metadata,
                             },
                             attempt=attempt,
+                            coverage_slot=self.config.coverage_slots[strategy][ordinal - 1],
                         ),
                     )
                     strategy_candidates.append(candidate)
                     candidates.append(candidate)
                     seen.add(key)
-                    if len(strategy_candidates) == 4:
+                    if len(strategy_candidates) == target_count:
                         break
-                if len(strategy_candidates) < 4 and attempt < self.config.max_attempts:
+                if len(strategy_candidates) < target_count and attempt < self.config.max_attempts:
                     logger.warning(
                         "model_response_rejected request_id=%s stage=generation strategy=%s "
                         "attempt=%s error_code=GENERATION_RESPONSE_INSUFFICIENT",
@@ -233,12 +240,13 @@ class CandidateGenerator:
                         attempt,
                     )
             attempts[strategy] = attempt
-            if len(strategy_candidates) != 4:
+            if len(strategy_candidates) != target_count:
                 raise GenerationError(
                     "生成策略未能提供四个有效且唯一的候选。",
                     code="GENERATION_ATTEMPTS_EXHAUSTED",
                     details={
                         "strategy": strategy,
+                        "target_count": target_count,
                         "valid_count": len(strategy_candidates),
                         "attempts": attempt,
                     },
@@ -250,6 +258,7 @@ class CandidateGenerator:
                 "title": item.title,
                 "strategy": item.strategy,
                 "ordinal": item.ordinal,
+                "coverage_slot": item.provenance.coverage_slot,
             }
             for item in candidates
         ]
@@ -266,6 +275,11 @@ class CandidateGenerator:
                 "parameters": self.config.parameters,
                 "target_locale": self.config.target_locale,
                 "target_market": self.config.target_market,
+                "strategy_counts": self.config.strategy_counts,
+                "coverage_slots": {
+                    strategy: list(slots)
+                    for strategy, slots in self.config.coverage_slots.items()
+                },
             },
             attempts=attempts,
             candidates=tuple(candidates),

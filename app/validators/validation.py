@@ -23,22 +23,42 @@ def validate_candidate_set(candidate_set: CandidateSet) -> None:
             "候选集 Schema 版本无效。",
             code="INVALID_CANDIDATE_SCHEMA_VERSION",
         )
-    if len(candidate_set.candidates) != 12:
+    configured_counts = candidate_set.generation_config.get("strategy_counts")
+    configured_slots = candidate_set.generation_config.get("coverage_slots")
+    if not isinstance(configured_counts, dict) or not isinstance(configured_slots, dict):
         raise ValidationError(
-            "候选集必须恰好包含 12 个候选。",
-            code="INVALID_CANDIDATE_COUNT",
-            details={"count": len(candidate_set.candidates)},
+            "候选集缺少策略配额或覆盖槽位配置。",
+            code="MISSING_COVERAGE_CONFIGURATION",
         )
-    counts = Counter(item.strategy for item in candidate_set.candidates)
-    if counts != Counter({strategy: 4 for strategy in STRATEGIES}):
+    if any(
+        isinstance(configured_counts.get(strategy), bool)
+        or not isinstance(configured_counts.get(strategy), int)
+        or configured_counts[strategy] <= 0
+        for strategy in STRATEGIES
+    ):
         raise ValidationError(
-            "候选集必须满足三种策略各四个。",
+            "候选集策略配额无效。",
+            code="INVALID_STRATEGY_COUNTS",
+        )
+    expected_count = sum(configured_counts[strategy] for strategy in STRATEGIES)
+    if expected_count not in {12, 24} or len(candidate_set.candidates) != expected_count:
+        raise ValidationError(
+            "候选集数量必须与配置的 12 或 24 个候选配额一致。",
+            code="INVALID_CANDIDATE_COUNT",
+            details={"count": len(candidate_set.candidates), "expected_count": expected_count},
+        )
+    expected_counts = Counter({strategy: configured_counts.get(strategy) for strategy in STRATEGIES})
+    counts = Counter(item.strategy for item in candidate_set.candidates)
+    if counts != expected_counts:
+        raise ValidationError(
+            "候选集必须满足配置的策略配额。",
             code="INVALID_STRATEGY_COUNTS",
             details={"counts": dict(counts)},
         )
     ids: set[str] = set()
     normalized: set[str] = set()
     ordinals: dict[str, set[int]] = {strategy: set() for strategy in STRATEGIES}
+    slots: dict[str, set[str]] = {strategy: set() for strategy in STRATEGIES}
     for item in candidate_set.candidates:
         expected_title = normalize_title(item.title)
         expected_id = candidate_id(candidate_set.sample_id, item.strategy, expected_title)
@@ -62,10 +82,22 @@ def validate_candidate_set(candidate_set: CandidateSet) -> None:
         ids.add(item.candidate_id)
         normalized.add(key)
         ordinals[item.strategy].add(item.ordinal)
-    if any(values != {1, 2, 3, 4} for values in ordinals.values()):
+        slots[item.strategy].add(item.provenance.coverage_slot)
+    if any(
+        values != set(range(1, int(configured_counts[strategy]) + 1))
+        for strategy, values in ordinals.items()
+    ):
         raise ValidationError(
-            "每种策略的候选序号必须是 1 到 4。",
+            "每种策略的候选序号必须与其配置配额一致。",
             code="INVALID_STRATEGY_ORDINALS",
+        )
+    if any(
+        slots[strategy] != set(configured_slots.get(strategy, ()))
+        for strategy in STRATEGIES
+    ):
+        raise ValidationError(
+            "候选集覆盖槽位与生成配置不一致。",
+            code="INVALID_COVERAGE_SLOTS",
         )
 
 
@@ -81,7 +113,11 @@ def validate_ranking_result(
     expected_ids = {item.candidate_id for item in candidate_set.candidates}
     score_ids = {item.candidate_id for item in result.scores}
     ordered_ids = set(result.ordered_candidate_ids)
-    if len(result.scores) != 12 or score_ids != expected_ids or ordered_ids != expected_ids:
+    if (
+        len(result.scores) != len(expected_ids)
+        or score_ids != expected_ids
+        or ordered_ids != expected_ids
+    ):
         raise ValidationError(
             "排名结果必须完整覆盖冻结候选池。",
             code="RANKING_POOL_MISMATCH",

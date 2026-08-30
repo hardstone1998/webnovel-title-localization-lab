@@ -48,7 +48,7 @@ class AllIneligibleAdapter(DeterministicAdapter):
                         ModelViolation(
                             code="SEMANTIC_MISMATCH",
                             severity="critical",
-                            rationale="test violation",
+                            rationale="测试违规",
                         ),
                     ),
                 )
@@ -108,7 +108,7 @@ def test_localization_api_returns_detailed_ranked_result(project_root, caplog) -
     assert set(body) == {"selected", "ranked_titles"}
     assert set(body["selected"]) == {"candidate_id", "title", "score"}
     assert isinstance(body["selected"]["score"], float)
-    assert len(body["ranked_titles"]) == 12
+    assert len(body["ranked_titles"]) == 24
     assert body["ranked_titles"][0]["candidate_id"] == body["selected"]["candidate_id"]
     assert body["ranked_titles"][0]["rank"] == 1
     assert body["ranked_titles"][0]["total_score"] == body["selected"]["score"]
@@ -118,9 +118,10 @@ def test_localization_api_returns_detailed_ranked_result(project_root, caplog) -
             "rank",
             "candidate_id",
             "title",
-            "strategy",
-            "ordinal",
-            "prompt_version",
+                "strategy",
+                "ordinal",
+                "coverage_slot",
+                "prompt_version",
             "scoring_prompt_version",
             "dimensions",
             "total_score",
@@ -139,8 +140,9 @@ def test_localization_api_returns_detailed_ranked_result(project_root, caplog) -
         "synopsis",
         "market_localized",
     }
-    assert {item["ordinal"] for item in body["ranked_titles"]} == {1, 2, 3, 4}
-    assert all(item["prompt_version"].endswith("anchor-first") for item in body["ranked_titles"])
+    assert {item["ordinal"] for item in body["ranked_titles"]} == set(range(1, 13))
+    assert all(item["coverage_slot"] for item in body["ranked_titles"])
+    assert all(item["prompt_version"].endswith("v5-24-coverage-matrix") for item in body["ranked_titles"])
     assert {
         item["scoring_prompt_version"] for item in body["ranked_titles"]
     } == {"eight-dimension-score-v2"}
@@ -171,7 +173,7 @@ def test_localization_api_includes_dimension_scores_when_debug_is_enabled(projec
 
     body = response.json()
     assert response.status_code == 200
-    assert len(body["debug"]) == 12
+    assert len(body["debug"]) == 24
     assert body["debug"] == body["ranked_titles"]
 
 

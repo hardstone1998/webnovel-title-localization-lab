@@ -29,6 +29,7 @@ from ..utils.logging import RunLogContext
 
 _TWO_PLACES = Decimal("0.01")
 _ALLOWED_SEVERITIES = {"critical", "major", "minor", "note"}
+_MAX_RATIONALE_LENGTH = 12
 _RECOVERABLE_PROVIDER_ERROR_CODES = {
     "PROVIDER_REQUEST_FAILED",
     "PROVIDER_RESPONSE_EMPTY",
@@ -171,10 +172,17 @@ def _validate_model_score(
                     "score": item.score,
                 },
             )
-        if not item.rationale.strip():
+        rationale = item.rationale.strip()
+        if not rationale:
             raise ValidationError(
                 "每个维度都必须提供评分理由。",
                 code="MISSING_SCORE_RATIONALE",
+                details={"candidate_id": model_score.candidate_id, "dimension": dimension},
+            )
+        if len(rationale) > _MAX_RATIONALE_LENGTH:
+            raise ValidationError(
+                "每个维度的评分理由最多 12 个字符。",
+                code="SCORE_RATIONALE_TOO_LONG",
                 details={"candidate_id": model_score.candidate_id, "dimension": dimension},
             )
         _as_decimal(item.weighted_contribution, "weighted_contribution")
@@ -190,6 +198,12 @@ def _validate_model_score(
                 code="INVALID_VIOLATION_RECORD",
                 details={"candidate_id": model_score.candidate_id},
             )
+        if len(violation.rationale.strip()) > _MAX_RATIONALE_LENGTH:
+            raise ValidationError(
+                "违规理由最多 12 个字符。",
+                code="VIOLATION_RATIONALE_TOO_LONG",
+                details={"candidate_id": model_score.candidate_id},
+            )
 
 
 def _validate_response(
@@ -199,12 +213,12 @@ def _validate_response(
     expected = dict(candidates)
     received_ids = [item.candidate_id for item in response.scores]
     if (
-        len(response.scores) != 12
-        or len(set(received_ids)) != 12
+        len(response.scores) != len(candidates)
+        or len(set(received_ids)) != len(candidates)
         or set(received_ids) != set(expected)
     ):
         raise ValidationError(
-            "评分响应必须恰好覆盖冻结候选池中的全部 12 个候选。",
+            "评分响应必须恰好覆盖冻结候选池中的全部候选。",
             code="SCORING_POOL_MISMATCH",
             details={
                 "expected_ids": sorted(expected),

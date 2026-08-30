@@ -45,7 +45,7 @@
     "input_permutation": {
       "type": "array",
       "minItems": 12,
-      "maxItems": 12,
+      "maxItems": 24,
       "uniqueItems": true,
       "items": { "type": "string", "pattern": "^cand_[a-f0-9]{16}$" }
     },
@@ -53,13 +53,13 @@
     "scores": {
       "type": "array",
       "minItems": 12,
-      "maxItems": 12,
+      "maxItems": 24,
       "items": { "$ref": "#/$defs/candidateScore" }
     },
     "ordered_candidate_ids": {
       "type": "array",
       "minItems": 12,
-      "maxItems": 12,
+      "maxItems": 24,
       "uniqueItems": true,
       "items": { "type": "string", "pattern": "^cand_[a-f0-9]{16}$" }
     },
@@ -86,7 +86,7 @@
       ],
       "properties": {
         "score": { "type": "integer", "minimum": 1, "maximum": 10 },
-        "rationale": { "type": "string", "minLength": 1 },
+        "rationale": { "type": "string", "minLength": 1, "maxLength": 12 },
         "model_contribution": { "type": "number" },
         "authoritative_contribution": { "type": "number" }
       }
@@ -98,7 +98,7 @@
       "properties": {
         "code": { "type": "string", "minLength": 1 },
         "severity": { "enum": ["critical", "major", "minor", "note"] },
-        "rationale": { "type": "string", "minLength": 1 },
+        "rationale": { "type": "string", "minLength": 1, "maxLength": 12 },
         "evidence_field": { "type": "string" }
       }
     },

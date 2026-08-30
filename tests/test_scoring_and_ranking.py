@@ -6,7 +6,7 @@ from decimal import Decimal
 import pytest
 from app.config.pipeline_config import load_config
 from app.domain.contracts import DIMENSIONS, fingerprint
-from app.domain.errors import ProviderError, ScoringError
+from app.domain.errors import ProviderError, ScoringError, ValidationError
 from app.llm.adapters import DeterministicAdapter
 from app.pipeline.scoring import (
     ModelCandidateScore,
@@ -15,6 +15,7 @@ from app.pipeline.scoring import (
     ScoringRequest,
     ScoringResponse,
     TitleRanker,
+    _validate_response,
     build_scoring_prompt,
 )
 from app.validators.validation import validate_ranking_result
@@ -66,11 +67,47 @@ def test_all_candidates_receive_complete_scores_and_one_winner(
 ) -> None:
     result = rank_with(DeterministicAdapter(), source, candidate_set, pipeline_config)
     validate_ranking_result(result, candidate_set)
-    assert len(result.scores) == 12
+    assert len(result.scores) == 24
     assert result.winner_candidate_id in result.ordered_candidate_ids
     assert result.outcome == "winner_selected"
     assert all(set(item.dimensions) == set(DIMENSIONS) for item in result.scores)
     assert all(Decimal(10) <= item.authoritative_total <= Decimal(100) for item in result.scores)
+
+
+def test_scoring_rejects_overlong_dimension_and_violation_rationales(
+    candidate_set,
+    pipeline_config,
+) -> None:
+    candidates = tuple((item.candidate_id, item.title) for item in candidate_set.candidates)
+    request = ScoringRequest(
+        prompt="",
+        candidates=candidates,
+        weights=pipeline_config.scoring.weights,
+        permutation_seed=pipeline_config.scoring.permutation_seed,
+    )
+    response = DeterministicAdapter().score(request)
+    first = response.scores[0]
+    dimension = DIMENSIONS[0]
+    dimensions = dict(first.dimensions)
+    dimensions[dimension] = replace(dimensions[dimension], rationale="x" * 13)
+    with pytest.raises(ValidationError) as error:
+        _validate_response(
+            replace(response, scores=(replace(first, dimensions=dimensions), *response.scores[1:])),
+            candidates,
+        )
+    assert error.value.code == "SCORE_RATIONALE_TOO_LONG"
+
+    invalid_violation = ModelViolation(
+        code="HOOK_INVENTED",
+        severity="critical",
+        rationale="x" * 13,
+    )
+    with pytest.raises(ValidationError) as error:
+        _validate_response(
+            replace(response, scores=(replace(first, violations=(invalid_violation,)), *response.scores[1:])),
+            candidates,
+        )
+    assert error.value.code == "VIOLATION_RATIONALE_TOO_LONG"
 
 
 def test_scoring_prompt_includes_chinese_genre_for_model_decision(
@@ -261,7 +298,7 @@ def test_highest_scoring_critical_candidate_is_excluded(
                 ModelViolation(
                     code="HOOK_INVENTED",
                     severity="critical",
-                    rationale="虚构了源内容不存在的卖点。",
+                    rationale="虚构卖点",
                     evidence_field="synopsis",
                 ),
             ),

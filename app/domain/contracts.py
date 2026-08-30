@@ -125,6 +125,7 @@ class CandidateProvenance:
     prompt_version: str
     parameters: dict[str, Any]
     attempt: int
+    coverage_slot: str = ""
 
 
 @dataclass(frozen=True)
@@ -165,6 +166,7 @@ class CandidateSet:
                     prompt_version=str(item["provenance"]["prompt_version"]),
                     parameters=dict(item["provenance"]["parameters"]),
                     attempt=int(item["provenance"]["attempt"]),
+                    coverage_slot=str(item["provenance"].get("coverage_slot", "")),
                 ),
             )
             for item in data["candidates"]

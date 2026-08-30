@@ -15,7 +15,7 @@ from .pipeline.orchestration import run_pipeline
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="title-localization",
-        description="生成 12 个英文候选剧名，并通过八维加权评分选出最终剧名。",
+        description="生成 24 个英文候选剧名，并通过八维加权评分选出最终剧名。",
     )
     parser.add_argument("--input", required=True, help="源记录 JSON 路径")
     parser.add_argument(

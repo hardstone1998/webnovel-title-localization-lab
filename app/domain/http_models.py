@@ -45,6 +45,7 @@ class RankedTitleScore(BaseModel):
     title: str
     strategy: str
     ordinal: int
+    coverage_slot: str
     prompt_version: str
     scoring_prompt_version: str
     dimensions: dict[str, int]

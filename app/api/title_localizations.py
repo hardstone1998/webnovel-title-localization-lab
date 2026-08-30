@@ -53,6 +53,7 @@ def localize_title(request: Request, body: LocalizationRequest) -> LocalizationR
             title=scores_by_id[candidate_id].title,
             strategy=candidates_by_id[candidate_id].strategy,
             ordinal=candidates_by_id[candidate_id].ordinal,
+            coverage_slot=candidates_by_id[candidate_id].provenance.coverage_slot,
             prompt_version=candidates_by_id[candidate_id].provenance.prompt_version,
             scoring_prompt_version=str(
                 outcome.ranking.scoring_provenance["prompt_version"]

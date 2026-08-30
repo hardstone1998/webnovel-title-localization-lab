@@ -62,6 +62,36 @@ _V3_STRATEGY_INSTRUCTIONS: dict[str, str] = {
 - 原题表达自然且有辨识度时应保留其核心；原题依赖中文语境时，可围绕简介主线重新命名。在准确、自然的前提下追求鲜明记忆点，避免套用可替换到大量作品上的万能逆袭或复仇句式。""",
 }
 
+_V4_COVERAGE_MATRIX_INSTRUCTIONS: dict[str, str] = {
+    "source_title": """\
+【Coverage matrix: source-title rewrites】
+Use only source_title and the visible genre fields. Follow the requested coverage_slots in the input in order: short canonical translation; article or morphology variant; natural-English reordering that retains the core noun; part-of-speech or word-order variant; genre-shaped expression retaining the core term; controlled market localization retaining the same anchor. Return only the number currently requested, including on a repair retry. Do not replace the source-title anchor merely to make candidates different.
+""",
+    "synopsis": """\
+【Coverage matrix: synopsis extraction】
+Use only synopsis and the visible genre fields. Follow the requested coverage_slots in the input in order: stable premise; core mechanism or relationship; supported complete expression. Return only the number currently requested, including on a repair retry. Every candidate must retain a hook explicitly supported by the visible context; do not infer the original Chinese title.
+""",
+    "market_localized": """\
+【Coverage matrix: controlled market localization】
+Use source_title, synopsis, genre, and target_market. Follow the requested coverage_slots in the input in order: anchor-preserving market title; anchor-preserving alternative; controlled market exploration. Return only the number currently requested, including on a repair retry. The first two configured slots must retain a core object, concept, relationship, mechanism, or premise locatable in source_title or synopsis. Do not invent a new hook.
+""",
+}
+
+_V5_24_COVERAGE_MATRIX_INSTRUCTIONS: dict[str, str] = {
+    "source_title": """\
+【Coverage matrix: 24-candidate source-title rewrites】
+Use only source_title and the visible genre fields. Follow the requested coverage_slots in order: short canonical translation; article or morphology variant; natural-English reordering; part-of-speech or word-order variant; genre-shaped core-term expression; controlled market localization; singular/plural or number variant; compound or preposition variant; possessive or of-construction; tone-register variant; anchor-preserving phrase expansion; anchor-preserving phrase compression. Each slot must keep the source-title anchor and differ substantively in readable English phrasing, not merely punctuation or a trivial synonym. Return only the number currently requested, including on a repair retry.
+""",
+    "synopsis": """\
+【Coverage matrix: 24-candidate synopsis extraction】
+Use only synopsis and the visible genre fields. Follow the requested coverage_slots in order: stable premise; core mechanism or relationship; supported complete expression; protagonist situation; central conflict; world or genre anchor. Every candidate must retain a hook explicitly supported by the visible context. Return only the number currently requested, including on a repair retry; do not infer the original Chinese title.
+""",
+    "market_localized": """\
+【Coverage matrix: 24-candidate controlled market localization】
+Use source_title, synopsis, genre, and target_market. Follow the requested coverage_slots in order: anchor-preserving market title; anchor-preserving alternative; controlled market exploration; premise-led market title; mechanism- or relationship-led market title; genre-signalled anchor-preserving title. Every candidate must retain a core object, concept, relationship, mechanism, or premise locatable in source_title or synopsis. Return only the number currently requested, including on a repair retry. Do not invent a new hook.
+""",
+}
+
 GENERATION_PROMPT_TEMPLATE = """\
 你是中文网文英文本地化编辑，负责为英语连载内容平台制作候选书名。
 
@@ -128,9 +158,18 @@ def build_generation_prompt(
 ) -> str:
     """Build the stage-1 prompt for one isolated generation strategy."""
     is_v2 = prompt_version.endswith("-v2")
-    strategy_instruction = (_V2_STRATEGY_INSTRUCTIONS if is_v2 else _V3_STRATEGY_INSTRUCTIONS)[
-        strategy
-    ]
+    is_v5_24_coverage_matrix = prompt_version.endswith("-v5-24-coverage-matrix")
+    is_coverage_matrix = prompt_version.endswith("-v4-coverage-matrix")
+    instructions = (
+        _V2_STRATEGY_INSTRUCTIONS
+        if is_v2
+        else _V5_24_COVERAGE_MATRIX_INSTRUCTIONS
+        if is_v5_24_coverage_matrix
+        else _V4_COVERAGE_MATRIX_INSTRUCTIONS
+        if is_coverage_matrix
+        else _V3_STRATEGY_INSTRUCTIONS
+    )
+    strategy_instruction = instructions[strategy]
     template = GENERATION_PROMPT_TEMPLATE
     if is_v2:
         template = template.replace(
@@ -228,7 +267,7 @@ severity 只能为 critical、major、minor、note。只有当中心前提被实
 - clarity_concision：脱离简介后是否仍易懂、聚焦、紧凑并具有标题感；短不等于清楚，长不必然失败。
 - integrity_safety：是否克制处理不确定信息，避免虚构、误导、重大剧透、歧视或不必要的冒犯性表达。
 
-使用完整量表校准：10=几乎无可挑剔，8=明显优秀，6=可用但有实质改进空间，4=存在清楚缺陷，2=严重失败，1=基本不可用。不得为了省事把所有分数集中在 6–8。每项 rationale 用一句简洁中文指出该维度最关键的证据或问题，不写空泛赞语。
+使用完整量表校准：10=几乎无可挑剔，8=明显优秀，6=可用但有实质改进空间，4=存在清楚缺陷，2=严重失败，1=基本不可用。不得为了省事把所有分数集中在 6–8。每项 rationale 必须是指出关键证据或问题的中文短语，去除首尾空白后最多 12 个字符；违规 rationale 同样最多 12 个字符，不写空泛赞语。
 
 ### 4. 计算模型侧权重值
 
@@ -255,17 +294,17 @@ candidates：
       "candidate_id": "原样复制输入 ID",
       "title": "原样复制输入标题",
       "dimensions": {{
-        "semantic_fidelity": {{"score": 1, "rationale": "一句中文理由", "weighted_contribution": 0.00}},
-        "natural_english": {{"score": 1, "rationale": "一句中文理由", "weighted_contribution": 0.00}},
-        "genre_tone_fit": {{"score": 1, "rationale": "一句中文理由", "weighted_contribution": 0.00}},
-        "target_market_fit": {{"score": 1, "rationale": "一句中文理由", "weighted_contribution": 0.00}},
-        "reader_appeal": {{"score": 1, "rationale": "一句中文理由", "weighted_contribution": 0.00}},
-        "memorability_distinctiveness": {{"score": 1, "rationale": "一句中文理由", "weighted_contribution": 0.00}},
-        "clarity_concision": {{"score": 1, "rationale": "一句中文理由", "weighted_contribution": 0.00}},
-        "integrity_safety": {{"score": 1, "rationale": "一句中文理由", "weighted_contribution": 0.00}}
+        "semantic_fidelity": {{"score": 1, "rationale": "锚点准确", "weighted_contribution": 0.00}},
+        "natural_english": {{"score": 1, "rationale": "表达自然", "weighted_contribution": 0.00}},
+        "genre_tone_fit": {{"score": 1, "rationale": "基调吻合", "weighted_contribution": 0.00}},
+        "target_market_fit": {{"score": 1, "rationale": "市场适配", "weighted_contribution": 0.00}},
+        "reader_appeal": {{"score": 1, "rationale": "钩子清晰", "weighted_contribution": 0.00}},
+        "memorability_distinctiveness": {{"score": 1, "rationale": "概念鲜明", "weighted_contribution": 0.00}},
+        "clarity_concision": {{"score": 1, "rationale": "简洁易懂", "weighted_contribution": 0.00}},
+        "integrity_safety": {{"score": 1, "rationale": "无虚构", "weighted_contribution": 0.00}}
       }},
       "violations": [
-        {{"code": "HOOK_INVENTED", "severity": "critical", "rationale": "一句中文理由", "evidence_field": "synopsis"}}
+        {{"code": "HOOK_INVENTED", "severity": "critical", "rationale": "虚构卖点", "evidence_field": "synopsis"}}
       ],
       "weighted_total": 0.00
     }}

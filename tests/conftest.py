@@ -33,6 +33,11 @@ def pipeline_config(project_root: Path):
 
 
 @pytest.fixture
+def coverage_matrix_config(project_root: Path):
+    return load_config(project_root / "configs/title_selection.coverage_matrix_v1.json")
+
+
+@pytest.fixture
 def candidate_set(source: SourceRecord, pipeline_config):
     return CandidateGenerator(
         DeterministicAdapter(),

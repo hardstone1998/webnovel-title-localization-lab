@@ -58,7 +58,7 @@ The first complete research cycle is intentionally narrow:
 - Chinese source and English target
 - web-novel title localization
 - title, synopsis, genre, protagonist, conflict, and hook as input context
-- six to eight candidates and a ranked Top 3 as output
+- 24 candidates (12/6/6 by strategy) and a ranked result as output
 - offline evaluation and a synchronous HTTP API
 
 Full-text translation, a reader-facing product, live CTR optimization, broad web
@@ -157,7 +157,7 @@ evaluation contract.
 - [Experiment plan](docs/experiment_plan.md): research sequence and promotion
   criteria
 - [Two-stage title selection](docs/two_stage_title_selection.md): Chinese usage
-  guide for 12-candidate generation, eight-dimension scoring, CLI operation,
+  guide for 24-candidate generation, eight-dimension scoring, CLI operation,
   artifacts, and provider setup
 
 ## OpenAI-compatible Provider Quick Start
@@ -267,7 +267,7 @@ contract.
 
 The repository now includes an executable two-stage baseline and a deployable
 FastAPI wrapper: three generation
-strategies produce 12 English title candidates, then an eight-dimension model
+strategies produce 24 English title candidates (12/6/6), then an eight-dimension model
 judge is verified with deterministic weighted arithmetic to select one eligible
 winner. The default deterministic adapter, schemas, CLI, synthetic example, and
 offline tests are implemented. The separately held-out 100-record Frozen Test

@@ -15,6 +15,11 @@ from ..prompts.templates import SUPPORTED_SCORING_PROMPT_VERSIONS
 from .settings import load_project_dotenv
 
 _ENV_VALUE = re.compile(r"^\$\{([A-Z][A-Z0-9_]*)(?::-([^}]*))?\}$")
+_LEGACY_STRATEGY_COUNTS = {strategy: 4 for strategy in STRATEGIES}
+_LEGACY_COVERAGE_SLOTS = {
+    strategy: tuple(f"legacy_{ordinal}" for ordinal in range(1, 5))
+    for strategy in STRATEGIES
+}
 
 
 @dataclass(frozen=True)
@@ -24,6 +29,8 @@ class GenerationConfig:
     parameters: dict[str, Any]
     target_locale: str
     target_market: str
+    strategy_counts: dict[str, int]
+    coverage_slots: dict[str, tuple[str, ...]]
 
 
 @dataclass(frozen=True)
@@ -54,6 +61,11 @@ class PipelineConfig:
                 "parameters": self.generation.parameters,
                 "target_locale": self.generation.target_locale,
                 "target_market": self.generation.target_market,
+                "strategy_counts": self.generation.strategy_counts,
+                "coverage_slots": {
+                    strategy: list(slots)
+                    for strategy, slots in self.generation.coverage_slots.items()
+                },
             },
             "scoring": {
                 "max_attempts": self.scoring.max_attempts,
@@ -103,6 +115,46 @@ def parse_config(data: dict[str, Any]) -> PipelineConfig:
             code="INVALID_PROMPT_VERSION_KEYS",
             details={"keys": sorted(prompt_versions)},
         )
+    strategy_counts = generation.get("strategy_counts", _LEGACY_STRATEGY_COUNTS)
+    coverage_slots = generation.get("coverage_slots", _LEGACY_COVERAGE_SLOTS)
+    if not isinstance(strategy_counts, dict) or set(strategy_counts) != set(STRATEGIES):
+        raise ValidationError(
+            "generation.strategy_counts 必须准确覆盖三种策略。",
+            code="INVALID_STRATEGY_COUNT_KEYS",
+            details={"keys": sorted(strategy_counts) if isinstance(strategy_counts, dict) else []},
+        )
+    parsed_strategy_counts = {
+        strategy: _positive_int(strategy_counts[strategy], f"generation.strategy_counts.{strategy}")
+        for strategy in STRATEGIES
+    }
+    if sum(parsed_strategy_counts.values()) not in {12, 24}:
+        raise ValidationError(
+            "generation.strategy_counts 的总和必须为 12 或 24。",
+            code="INVALID_STRATEGY_COUNT_TOTAL",
+            details={"total": sum(parsed_strategy_counts.values())},
+        )
+    if not isinstance(coverage_slots, dict) or set(coverage_slots) != set(STRATEGIES):
+        raise ValidationError(
+            "generation.coverage_slots 必须准确覆盖三种策略。",
+            code="INVALID_COVERAGE_SLOT_KEYS",
+        )
+    parsed_coverage_slots: dict[str, tuple[str, ...]] = {}
+    for strategy in STRATEGIES:
+        slots = coverage_slots[strategy]
+        if not isinstance(slots, (list, tuple)) or len(slots) != parsed_strategy_counts[strategy]:
+            raise ValidationError(
+                "每种策略的 coverage_slots 数量必须与其配额一致。",
+                code="INVALID_COVERAGE_SLOT_COUNT",
+                details={"strategy": strategy},
+            )
+        cleaned_slots = tuple(str(slot).strip() for slot in slots)
+        if not all(cleaned_slots) or len(set(cleaned_slots)) != len(cleaned_slots):
+            raise ValidationError(
+                "coverage_slots 必须为策略内唯一的非空名称。",
+                code="INVALID_COVERAGE_SLOT_VALUE",
+                details={"strategy": strategy},
+            )
+        parsed_coverage_slots[strategy] = cleaned_slots
     expected_dimensions = set(DIMENSIONS)
     if set(weights) != expected_dimensions or set(guidance) != expected_dimensions:
         raise ValidationError(
@@ -195,6 +247,8 @@ def parse_config(data: dict[str, Any]) -> PipelineConfig:
             parameters=dict(generation.get("parameters", {})),
             target_locale=str(generation.get("target_locale", "")).strip(),
             target_market=str(generation.get("target_market", "")).strip(),
+            strategy_counts=parsed_strategy_counts,
+            coverage_slots=parsed_coverage_slots,
         ),
         scoring=ScoringConfig(
             max_attempts=_positive_int(scoring.get("max_attempts"), "scoring.max_attempts"),

@@ -33,18 +33,30 @@ _DETERMINISTIC_TITLES = {
         "Awakening the God-Tier Sign-In",
         "My Supreme Sign-In Power",
         "Starting with a Divine Check-In",
+        "Divine Sign-In",
+        "The Check-In Path",
+        "Sign-In of the Divine",
+        "A God-Tier Check-In",
+        "The Divine Check-In Way",
+        "Check-In to Divinity",
+        "The Sign-In Ascension",
+        "Divine System Check-In",
     ),
     "synopsis": (
         "Banished, Then Blessed",
         "The Exile's Hidden System",
         "Check In to Rise Again",
         "From Outcast to Overlord",
+        "A Banished Disciple's Return",
+        "The System Behind My Exile",
     ),
     "market_localized": (
         "Exiled with the Ultimate System",
         "Every Check-In Makes Me Stronger",
         "My Comeback Starts with a Sign-In",
         "Leveling Up After the Sect Cast Me Out",
+        "The Banished Disciple's System",
+        "My System-Fueled Return",
     ),
 }
 
@@ -105,7 +117,7 @@ class DeterministicAdapter:
                 total += contribution
                 dimensions[dimension] = ModelDimensionScore(
                     score=score,
-                    rationale=f"确定性测试评分：{dimension}={score}。",
+                    rationale=f"确定性{score}分",
                     weighted_contribution=contribution,
                 )
             scores.append(

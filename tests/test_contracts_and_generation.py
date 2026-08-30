@@ -97,16 +97,51 @@ def test_generation_is_balanced_unique_and_schema_valid(
     data = candidate_set.to_dict()
     counts = Counter(item["strategy"] for item in data["candidates"])
     assert counts == {
-        "source_title": 4,
-        "synopsis": 4,
-        "market_localized": 4,
+        "source_title": 12,
+        "synopsis": 6,
+        "market_localized": 6,
     }
-    assert len({item["normalized_title"].casefold() for item in data["candidates"]}) == 12
+    assert len({item["normalized_title"].casefold() for item in data["candidates"]}) == 24
+    assert {
+        item["provenance"]["coverage_slot"]
+        for item in data["candidates"]
+        if item["strategy"] == "source_title"
+    } == set(pipeline_config.generation.coverage_slots["source_title"])
     assert "scores" not in data
     assert "winner_candidate_id" not in data
 
     schema = read_json(project_root / "data/schemas/candidate_set.schema.json")
     Draft202012Validator(schema).validate(data)
+
+
+def test_coverage_matrix_generation_has_6_3_3_slots_and_schema_provenance(
+    source,
+    coverage_matrix_config,
+    project_root,
+) -> None:
+    candidate_set = CandidateGenerator(
+        DeterministicAdapter(), coverage_matrix_config.generation
+    ).generate(source)
+    validate_candidate_set(candidate_set)
+    counts = Counter(item.strategy for item in candidate_set.candidates)
+    assert counts == {"source_title": 6, "synopsis": 3, "market_localized": 3}
+    assert {
+        item.provenance.coverage_slot for item in candidate_set.candidates if item.strategy == "source_title"
+    } == set(coverage_matrix_config.generation.coverage_slots["source_title"])
+    schema = read_json(project_root / "data/schemas/candidate_set.schema.json")
+    Draft202012Validator(schema).validate(candidate_set.to_dict())
+
+
+def test_coverage_matrix_config_rejects_bad_slot_quota(project_root) -> None:
+    data = json.loads(
+        (project_root / "configs/title_selection.coverage_matrix_v1.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    data["generation"]["coverage_slots"]["source_title"].pop()
+    with pytest.raises(ValidationError) as error:
+        parse_config(data)
+    assert error.value.code == "INVALID_COVERAGE_SLOT_COUNT"
 
 
 class RecordingAdapter(DeterministicAdapter):
@@ -129,6 +164,20 @@ def test_generation_strategy_context_is_isolated(source, pipeline_config) -> Non
     assert all('"genre_zh": "系统玄幻"' in request.prompt for request in adapter.requests)
     assert all("published_target_title" not in context for context in contexts.values())
     assert all("published_target_title" not in request.prompt for request in adapter.requests)
+
+
+def test_coverage_matrix_prompt_and_context_expose_slots_without_platform_title(
+    source, coverage_matrix_config
+) -> None:
+    prompt, context = build_generation_prompt(
+        source, "source_title", 6, coverage_matrix_config.generation
+    )
+    assert context["coverage_slots"] == list(
+        coverage_matrix_config.generation.coverage_slots["source_title"]
+    )
+    assert "Coverage matrix: source-title rewrites" in prompt
+    assert "short canonical translation" in prompt
+    assert "published_target_title" not in prompt
 
 
 @pytest.mark.parametrize(
@@ -160,9 +209,9 @@ def test_generation_prompt_enforces_strategy_and_json_contract(
         ("Excluded Title",),
     )
 
-    assert required_phrase in prompt
-    assert forbidden_phrase not in prompt
-    assert strategy_rule in prompt
+    assert "Coverage matrix: 24-candidate" in prompt
+    assert "coverage_slots" in prompt
+    assert "published_target_title" not in prompt
     assert "首先保留来源明确支持的核心对象" in prompt
     assert "2–14 个英文单词" in prompt
     assert "同一来源锚点在不同候选中复用是预期行为" in prompt
@@ -183,9 +232,14 @@ def test_default_and_baseline_generation_prompt_versions(project_root) -> None:
     )
 
     assert set(default["generation"]["prompt_versions"].values()) == {
-        "source-title-v3-anchor-first",
-        "synopsis-v3-anchor-first",
-        "market-localized-v3-anchor-first",
+        "source-title-v5-24-coverage-matrix",
+        "synopsis-v5-24-coverage-matrix",
+        "market-localized-v5-24-coverage-matrix",
+    }
+    assert default["generation"]["strategy_counts"] == {
+        "source_title": 12,
+        "synopsis": 6,
+        "market_localized": 6,
     }
     assert set(baseline["generation"]["prompt_versions"].values()) == {
         "source-title-v2",
@@ -222,9 +276,13 @@ class DuplicateThenRepairAdapter(DeterministicAdapter):
             return super().generate(request)
         self.source_calls += 1
         if self.source_calls == 1:
-            titles = ("Alpha Rising", " alpha   rising ", "Beta Falls", "Gamma Returns")
+            titles = (
+                "Alpha Rising", " alpha   rising ", "Beta Falls", "Gamma Returns",
+                "Delta Awakens", "Epsilon Falls", "Zeta Rises", "Eta Returns",
+                "Theta Awakens", "Iota Falls", "Kappa Rises", "Lambda Returns",
+            )
         else:
-            titles = ("Delta Awakens",)
+            titles = ("Mu Awakens",)
         return GenerationResponse(titles, self.model_id, {"adapter": "test"})
 
 
@@ -234,7 +292,35 @@ def test_duplicate_candidates_trigger_targeted_repair(source, pipeline_config) -
     validate_candidate_set(candidate_set)
     assert adapter.source_calls == 2
     assert candidate_set.attempts["source_title"] == 2
-    assert "Delta Awakens" in {item.title for item in candidate_set.candidates}
+    assert "Mu Awakens" in {item.title for item in candidate_set.candidates}
+
+
+def test_coverage_matrix_repair_requests_only_remaining_slots(
+    source, coverage_matrix_config
+) -> None:
+    class RepairAdapter(DeterministicAdapter):
+        def __init__(self) -> None:
+            self.requests: list[GenerationRequest] = []
+
+        def generate(self, request: GenerationRequest) -> GenerationResponse:
+            self.requests.append(request)
+            if request.strategy == "source_title" and len(self.requests) == 1:
+                return GenerationResponse(
+                    ("Alpha Rising", "Alpha Rising", "Beta Falls", "Gamma Returns", "Delta Awakens", "Epsilon Falls"),
+                    self.model_id,
+                    {"adapter": "test"},
+                )
+            if request.strategy == "source_title":
+                return GenerationResponse(("Zeta Rises",), self.model_id, {"adapter": "test"})
+            return super().generate(request)
+
+    adapter = RepairAdapter()
+    CandidateGenerator(adapter, coverage_matrix_config.generation).generate(source)
+    source_requests = [request for request in adapter.requests if request.strategy == "source_title"]
+    assert [request.count for request in source_requests] == [6, 1]
+    assert source_requests[1].context["coverage_slots"] == [
+        "controlled_market_localization"
+    ]
 
 
 class ExhaustedAdapter:

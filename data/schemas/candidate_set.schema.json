@@ -34,7 +34,7 @@
     "candidates": {
       "type": "array",
       "minItems": 12,
-      "maxItems": 12,
+      "maxItems": 24,
       "uniqueItems": true,
       "allOf": [
         {
@@ -44,7 +44,7 @@
             "required": ["strategy"]
           },
           "minContains": 4,
-          "maxContains": 4
+          "maxContains": 12
         },
         {
           "contains": {
@@ -52,8 +52,8 @@
             "properties": { "strategy": { "const": "synopsis" } },
             "required": ["strategy"]
           },
-          "minContains": 4,
-          "maxContains": 4
+          "minContains": 3,
+          "maxContains": 6
         },
         {
           "contains": {
@@ -61,8 +61,8 @@
             "properties": { "strategy": { "const": "market_localized" } },
             "required": ["strategy"]
           },
-          "minContains": 4,
-          "maxContains": 4
+          "minContains": 3,
+          "maxContains": 6
         }
       ],
       "items": { "$ref": "#/$defs/candidate" }
@@ -87,16 +87,17 @@
         "strategy": {
           "enum": ["source_title", "synopsis", "market_localized"]
         },
-        "ordinal": { "type": "integer", "minimum": 1, "maximum": 4 },
+        "ordinal": { "type": "integer", "minimum": 1, "maximum": 12 },
         "provenance": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["model_id", "prompt_version", "parameters", "attempt"],
+          "required": ["model_id", "prompt_version", "parameters", "attempt", "coverage_slot"],
           "properties": {
             "model_id": { "type": "string", "minLength": 1 },
             "prompt_version": { "type": "string", "minLength": 1 },
             "parameters": { "type": "object" },
-            "attempt": { "type": "integer", "minimum": 1 }
+            "attempt": { "type": "integer", "minimum": 1 },
+            "coverage_slot": { "type": "string", "minLength": 1 }
           }
         }
       }

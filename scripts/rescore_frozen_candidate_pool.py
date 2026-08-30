@@ -67,6 +67,7 @@ CSV_FIELDS = (
     "candidate_title",
     "candidate_strategy",
     "candidate_ordinal",
+    "candidate_coverage_slot",
     "candidate_prompt_version",
     "candidate_total_score",
     "critical_violation_codes",
@@ -142,6 +143,7 @@ def _candidate_set(rows: list[dict[str, str]], input_sha256: str) -> CandidateSe
                 prompt_version=row["candidate_prompt_version"],
                 parameters={"frozen_pool_sha256": input_sha256},
                 attempt=1,
+                coverage_slot=row.get("candidate_coverage_slot", "legacy_unclassified"),
             ),
         )
         for row in rows
@@ -283,6 +285,7 @@ def main() -> int:
                         "candidate_title": candidate.title,
                         "candidate_strategy": candidate.strategy,
                         "candidate_ordinal": candidate.ordinal,
+                        "candidate_coverage_slot": candidate.provenance.coverage_slot,
                         "candidate_prompt_version": candidate.provenance.prompt_version,
                         "candidate_total_score": score.authoritative_total,
                         "critical_violation_codes": json.dumps(
